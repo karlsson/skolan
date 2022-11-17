@@ -1,0 +1,109 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+# NB: Consider using poEdit <http://poedit.sourceforge.net>
+#
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: ./_build/default/lib/skolan/priv/templates/page.category.tpl:60
+msgid ""
+"All"
+msgstr ""
+""
+
+#: ./_build/default/lib/skolan/priv/templates/page.media.tpl:49
+msgid ""
+"Depiction of"
+msgstr ""
+""
+
+#: ./_build/default/lib/skolan/priv/templates/page.media.tpl:37
+msgid ""
+"Download in new window"
+msgstr ""
+""
+
+#: ./_build/default/lib/skolan/priv/templates/_nav_sidedrawer.tpl:53
+msgid ""
+"Edit menu"
+msgstr ""
+""
+
+#: ./_build/default/lib/skolan/priv/templates/_nav_sidedrawer.tpl:48
+msgid ""
+"Edit page"
+msgstr ""
+""
+
+#: ./_build/default/lib/skolan/priv/templates/page.media.tpl:59
+msgid ""
+"Latest in"
+msgstr ""
+""
+
+#: ./_build/default/lib/skolan/priv/templates/page.website.tpl:38
+msgid ""
+"Latest websites"
+msgstr ""
+""
+
+#: ./_build/default/lib/skolan/priv/templates/_nav_sidedrawer.tpl:57
+msgid ""
+"Log off"
+msgstr ""
+""
+
+#: ./_build/default/lib/skolan/priv/templates/page.person.tpl:41
+msgid ""
+"Owner"
+msgstr ""
+""
+
+#: ./_build/default/lib/skolan/priv/templates/page.query.tpl:22./_build/default/lib/skolan/priv/templates/search.tpl:32
+msgid ""
+"Pages"
+msgstr ""
+""
+
+#: ./_build/default/lib/skolan/priv/templates/home.tpl:81
+msgid ""
+"Recent updates."
+msgstr ""
+""
+
+#: ./_build/default/lib/skolan/priv/templates/_nav_header.tpl:32./_build/default/lib/skolan/priv/templates/search.tpl:4./_build/default/lib/skolan/priv/templates/search.tpl:11
+msgid ""
+"Search"
+msgstr ""
+""
+
+#: ./_build/default/lib/skolan/priv/templates/page.category.tpl:41
+msgid ""
+"See more"
+msgstr ""
+""
+
+#: ./_build/default/lib/skolan/priv/templates/search.tpl:15
+msgid ""
+"Text to search"
+msgstr ""
+""
+
+#: ./_build/default/lib/skolan/priv/templates/_list_item.media.tpl:14./_build/default/lib/skolan/priv/templates/_list_item.tpl:5./_build/default/lib/skolan/priv/templates/_list_item.website.tpl:13
+msgid ""
+"Untitled"
+msgstr ""
+""

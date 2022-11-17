@@ -1,0 +1,153 @@
+/* Define your site-specific styles here. */
+/* Placeholder CSS pfile. Override this one in your site. */
+
+
+/* League Gothic and Fanwood fonts are available at https://www.theleagueofmoveabletype.com/ and 
+ * licensed under the SIL Open Font License, Version 1.1.
+ * This license is available with a FAQ at: http://scripts.sil.org/OFL
+ */
+
+$lib-fonts: '/lib/fonts/league';
+
+/* Regular */
+@font-face {
+    font-family: 'League Gothic';
+    src: url($lib-fonts + '/leaguegothic-regular-webfont.eot');
+    src: url($lib-fonts + '/leaguegothic-regular-webfont.eot?#iefix') format('embedded-opentype'),
+         url($lib-fonts + '/leaguegothic-regular-webfont.woff') format('woff'),
+         url($lib-fonts + '/leaguegothic-regular-webfont.ttf') format('truetype'),
+         url($lib-fonts + '/leaguegothic-regular-webfont.svg#league_gothicregular') format('svg');
+    font-weight: normal;
+    font-style: normal;
+
+}
+
+/* Italic */
+@font-face {
+    font-family: 'League Gothic';
+    src: url($lib-fonts + '/leaguegothic-italic-webfont.eot');
+    src: url($lib-fonts + '/leaguegothic-italic-webfont.eot?#iefix') format('embedded-opentype'),
+         url($lib-fonts + '/leaguegothic-italic-webfont.woff') format('woff'),
+         url($lib-fonts + '/leaguegothic-italic-webfont.ttf') format('truetype'),
+         url($lib-fonts + '/leaguegothic-italic-webfont.svg#league_gothic_italicregular') format('svg');
+    font-weight: normal;
+    font-style: italic;
+
+}
+
+/* Condensed */
+@font-face {
+    font-family: 'League Gothic Condensed';
+    src: url($lib-fonts + '/leaguegothic-condensed-regular-webfont.eot');
+    src: url($lib-fonts + '/leaguegothic-condensed-regular-webfont.eot?#iefix') format('embedded-opentype'),
+         url($lib-fonts + '/leaguegothic-condensed-regular-webfont.woff') format('woff'),
+         url($lib-fonts + '/leaguegothic-condensed-regular-webfont.ttf') format('truetype'),
+         url($lib-fonts + '/leaguegothic-condensed-regular-webfont.svg#league_gothic_condensed-Rg') format('svg');
+    font-weight: normal;
+    font-style: normal;
+
+}
+
+/* Condensed Italic */
+@font-face {
+    font-family: 'League Gothic Condensed';
+    src: url($lib-fonts + '/leaguegothic-condensed-italic-webfont.eot');
+    src: url($lib-fonts + '/leaguegothic-condensed-italic-webfont.eot?#iefix') format('embedded-opentype'),
+         url($lib-fonts + '/leaguegothic-condensed-italic-webfont.woff') format('woff'),
+         url($lib-fonts + '/leaguegothic-condensed-italic-webfont.ttf') format('truetype'),
+         url($lib-fonts + '/leaguegothic-condensed-italic-webfont.svg#league_gothic_condensed_itaRg') format('svg');
+    font-weight: normal;
+    font-style: italic;
+}
+
+@font-face {
+    font-family: 'Fanwood';
+    src: url($lib-fonts + '/fanwood-webfont.eot');
+    src: url($lib-fonts + '/fanwood-webfont.eot?#iefix') format('embedded-opentype'),
+         url($lib-fonts + '/fanwood-webfont.woff') format('woff'),
+         url($lib-fonts + '/fanwood-webfont.ttf') format('truetype'),
+         url($lib-fonts + '/fanwood-webfont.svg#league_gothicregular') format('svg');
+    font-weight: normal;
+    font-style: normal;
+
+}
+
+
+@font-face {
+    font-family: 'Fanwood';
+    src: url($lib-fonts + '/fanwood_italic-webfont.eot');
+    src: url($lib-fonts + '/fanwood_italic-webfont.eot?#iefix') format('embedded-opentype'),
+         url($lib-fonts + '/fanwood_italic-webfont.woff') format('woff'),
+         url($lib-fonts + '/fanwood_italic-webfont.ttf') format('truetype'),
+         url($lib-fonts + '/fanwood_italic-webfont.svg#league_gothic_italicregular') format('svg');
+    font-weight: normal;
+    font-style: italic;
+
+}
+
+@font-face {
+    font-family: 'Fanwood Text';
+    src: url($lib-fonts + '/fanwood_text-webfont.eot');
+    src: url($lib-fonts + '/fanwood_text-webfont.eot?#iefix') format('embedded-opentype'),
+         url($lib-fonts + '/fanwood_text-webfont.woff') format('woff'),
+         url($lib-fonts + '/fanwood_text-webfont.ttf') format('truetype'),
+         url($lib-fonts + '/fanwood_text-webfont.svg#league_gothicregular') format('svg');
+    font-weight: normal;
+    font-style: normal;
+
+}
+
+
+@font-face {
+    font-family: 'Fanwood Text';
+    src: url($lib-fonts + '/fanwood_text_italic-webfont.eot');
+    src: url($lib-fonts + '/fanwood_text_italic-webfont.eot?#iefix') format('embedded-opentype'),
+         url($lib-fonts + '/fanwood_text_italic-webfont.woff') format('woff'),
+         url($lib-fonts + '/fanwood_text_italic-webfont.ttf') format('truetype'),
+         url($lib-fonts + '/fanwood_text_italic-webfont.svg#league_gothic_italicregular') format('svg');
+    font-weight: normal;
+    font-style: italic;
+
+}
+
+
+/*
+h1, h2, h3 {
+    font-family: 'League Gothic';
+}
+a.navbar-brand {
+    padding: 2px 15px;
+}
+
+img.right{
+    float: right;
+    margin: 0px 0px 15px 15px;
+}
+
+#navigation {
+    font-family: 'League Gothic';
+    font-size: 150%;
+}
+
+
+.body, p {
+    font-family: Georgia, serif;
+    font-kerning: normal;
+    font-variant-numeric: oldstyle-nums;
+    font-family: 'Fanwood', serif;
+    font-size: 110%;
+}
+/*
+a.navbar-brand img {
+    background-color: transparent;
+}
+*/
+
+.footer {
+    background-color: black;
+    color: white;
+    padding: 10px;
+    font-family: 'League Gothic';
+    text-align: center;
+    letter-spacing: 1px;
+}
