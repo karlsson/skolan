@@ -32,15 +32,18 @@ m_get([<<"org", OrgNo/binary>>], _Msg, Context) ->
 %% m.skolan_verket[skolenhetid.name]
 m_get([<<"se", SchoolUnitCode/binary>>], _Msg, Context)->
   {ok, {fetch_data(statistics, SchoolUnitCode, Context),[]}};
-m_get([Id], _Msg, Context)->
-  case m_rsc:p(Id, name, Context) of
-    undefined ->
-      {error, not_found};
-    <<"org", OrgNo/binary>> ->
-      {ok, {fetch_data(skolenheter, OrgNo, Context),[]}};
-    <<"se", SchoolUnitCode/binary>> ->
-      {ok, {fetch_data(statistics, SchoolUnitCode, Context),[]}}
-  end.
+m_get(_, _Msg, Context) ->
+  {error, <<"Argument skall vara, huvudman, org<organisationsnummer>, se<skolenhetskod. ",
+            "Exempelvis org5568089246">>}.
+%% m_get([Id], _Msg, Context)->
+%%   case m_rsc:p(Id, name, Context) of
+%%     undefined ->
+%%       {error, not_found};
+%%     <<"org", OrgNo/binary>> ->
+%%       {ok, {fetch_data(skolenheter, OrgNo, Context),[]}};
+%%     <<"se", SchoolUnitCode/binary>> ->
+%%       {ok, {fetch_data(statistics, SchoolUnitCode, Context),[]}}
+%%   end.
 
 %% huvudman has Namn, PeOrgNr and Typ as attributes.
 %% [#{Namn, PeOrgNr, Typ}] Typ = "Enskild"|"Kommun"|"Region"

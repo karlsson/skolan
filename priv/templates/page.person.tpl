@@ -49,9 +49,33 @@
             </div>
         {% endif %}
 
+        {% if id.o.owns|is_visible as owns %}
+            Äger
+            <dl class="connections">
+                {% for id in owns %}
+                    <dt><a href="{{ id.page_url }}">{{ id.title }}</a></dt>
+                    <dd class="do_clickable">
+                        {{ id|summary:160 }}
+                        <a href="{{ id.page_url }}"></a>
+                    </dd>
+                {% endfor %}
+            </dl>
+        {% endif %}
+
         {% if id.s.lobbyist|is_visible as lobbyist %}
             <div class="connections">
                 <h3>Lobbyister</h3>
+                <div class="list-items">
+                    {% for id in lobbyist|sort:['title'] %}
+                        {% catinclude "_list_item.tpl" id %}
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+
+        {% if id.o.lobbyist|is_visible as lobbyist %}
+            <div class="connections">
+                <h3>Lobbar åt</h3>
                 <div class="list-items">
                     {% for id in lobbyist|sort:['title'] %}
                         {% catinclude "_list_item.tpl" id %}

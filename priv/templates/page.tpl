@@ -33,19 +33,6 @@
             </div>
         {% endif %}
         
-        {% if id.o.works_for|is_visible as works_for %}
-            Arbetar åt
-            <dl class="connections">
-                {% for id in works_for %}
-                    <dt><a href="{{ id.page_url }}">{{ id.title }}</a></dt>
-                    <dd class="do_clickable">
-                        {{ id|summary:160 }}
-                        <a href="{{ id.page_url }}"></a>
-                    </dd>
-                {% endfor %}
-            </dl>
-        {% endif %}
-
         {% if id.s.works_for|is_visible as works_for %}
             <div class="connections">
                 <h3>Lobbyister</h3>
@@ -55,19 +42,6 @@
                     {% endfor %}
                 </div>
             </div>
-        {% endif %}
-
-        {% if id.o.owns|is_visible as owns %}
-            Äger
-            <dl class="connections">
-                {% for id in owns %}
-                    <dt><a href="{{ id.page_url }}">{{ id.title }}</a></dt>
-                    <dd class="do_clickable">
-                        {{ id|summary:160 }}
-                        <a href="{{ id.page_url }}"></a>
-                    </dd>
-                {% endfor %}
-            </dl>
         {% endif %}
 
         {% if id.o.haspart|is_visible as haspart %}
