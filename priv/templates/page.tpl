@@ -2,8 +2,8 @@
 
 {% block content %}
     <article>
+        <aside class="text-right small">Upplagd {{ id.publication_start | date:"Y-m-d" }} av {{m.rsc[id.creator_id].title }}</aside>
         <h1>{{ id.title }}</h1>
-
         {% if id.depiction as dep %}
             {% include "_body_media.tpl" id=dep.id size="medium" %}
         {% endif %}
@@ -18,7 +18,6 @@
     </article>
 {% endblock %}
 
-
 {% block content_after %}
     <div class="page-relations">
 
@@ -32,7 +31,7 @@
                 </div>
             </div>
         {% endif %}
-        
+
         {% if id.s.works_for|is_visible as works_for %}
             <div class="connections">
                 <h3>Lobbyister</h3>
