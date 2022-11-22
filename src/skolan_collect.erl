@@ -105,19 +105,34 @@ check_if_koncern(OrgNo, Context) ->
 -spec create_if_not_exist(binary(), binary(), atom(), z:context())->
         {ok, integer()} | {error, term()}.
 create_if_not_exist(OrgNo, Title, Category, Context)->
+  create_if_not_exist(OrgNo, Title, Category, [], Context).
+create_if_not_exist(OrgNo, Title, Category, OptionalArgs, Context)->
   case get_stored_item(OrgNo, Category, Context) of
-    {ok, Id} -> {ok, Id};
+    {ok, Id} ->
+      case proplists:get_value(status, OptionalArgs) of
+        undefined ->
+          do_nothing;
+        Status ->
+          m_rsc:update(Id, #{<<"status">> => Status}, Context)
+      end,
+      {ok, Id};
     {error,{unknown_rsc,_}} ->
       CatId = m_rsc:rid(Category, Context),
-      Props = #{
-                <<"title">> => {trans,[{sv,Title}]},
-                <<"name">> => name_from_orgno(OrgNo, Category),
-                <<"category_id">> => CatId,
-                <<"tz">> => <<"UTC">>,
-                <<"is_published">> => true,
-                %% <<"creator_id">> => AdminId,
-                <<"language">> => [sv]
-               },
+      Props1 =
+        #{
+          <<"title">> => {trans,[{sv,Title}]},
+          <<"name">> => name_from_orgno(OrgNo, Category),
+          <<"category_id">> => CatId,
+          <<"tz">> => <<"UTC">>,
+          <<"is_published">> => true,
+          %% <<"creator_id">> => AdminId,
+          <<"language">> => [sv]
+         },
+      Props =
+        case proplists:get_value(status, OptionalArgs) of
+          undefined -> Props1;
+          Status -> Props1#{<<"status">> => Status}
+        end,
       m_rsc:insert(Props, Context)
   end.
 
@@ -178,8 +193,10 @@ add_schools(CompId, Context) when is_integer(CompId)->
             fun
               (#{<<"Skolenhetskod">> := SchoolUnitCode,
                  <<"Skolenhetsnamn">> := Title,
-                 <<"Status">> := <<"Aktiv">>}) ->
-                {ok, SchoolId} = create_if_not_exist(SchoolUnitCode, Title, skola, Context),
+                 <<"Status">> := Status}) ->
+                {ok, SchoolId} =
+                  create_if_not_exist(SchoolUnitCode, Title,
+                                      skola,[{status, Status}], Context),
                 m_edge:insert(SchoolId, huvudman, CompId, Context); %% {ok, _EdgeId}
               (_) -> do_nothing
             end, L),

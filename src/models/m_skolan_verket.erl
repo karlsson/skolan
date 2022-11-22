@@ -96,17 +96,17 @@ fetch_data1(statistics, SchoolUnitCode, Context) ->
       Links = maps:to_list(LinkMap),
       F = fun
             ({<<"self">>, _}) ->
-                                                          false;
-        ({TS, Link}) -> %% TS is <<"{gr,grs,gy,gys,fs,fsk,..}-statistics">>
-                                                          case string:split(TS,"-") of
-                                                            [Type,_] ->
-                                                              {true, get_statistics(Type, Link, Context)};
-                                                            _ -> false
-                                                          end
-                                                      end,
-  lists:filtermap(F, Links);
-Error ->
-  Error
+              false;
+            ({TS, Link}) -> % TS is <<"{gr,grs,gy,gys,fs,fsk,..}-statistics">>
+              case string:split(TS,"-") of
+                [Type,_] ->
+                  {true, get_statistics(Type, Link, Context)};
+                _ -> false
+              end
+          end,
+      lists:filtermap(F, Links);
+    Error ->
+      Error
   end.
 
 get_statistics(Type, #{<<"href">> := Url},Context) ->
