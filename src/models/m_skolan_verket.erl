@@ -18,7 +18,7 @@
     Msg :: zotonic_model:opt_msg(),
     Return :: zotonic_model:return(),
     Context:: z:context().
-                                                % Syntax: m.skolan_verket.api_url
+%% Syntax: m.skolan_verket.api_url
 m_get([ <<"api_url">> | Rest ], _Msg, _Context) ->
   {ok, {z_convert:to_binary(?API_URL), Rest}};
 
@@ -32,7 +32,9 @@ m_get([<<"org", OrgNo/binary>>], _Msg, Context) ->
 %% m.skolan_verket[skolenhetid.name]
 m_get([<<"se", SchoolUnitCode/binary>>], _Msg, Context)->
   {ok, {fetch_data(statistics, SchoolUnitCode, Context),[]}};
-m_get(_, _Msg, Context) ->
+m_get([<<"national_values">>, SchoolForm], _Msg, Context)->
+  {ok, {fetch_data(national_values, SchoolForm, Context),[]}};
+m_get(_, _Msg, _Context) ->
   {error, <<"Argument skall vara, huvudman, org<organisationsnummer>, se<skolenhetskod. ",
             "Exempelvis org5568089246">>}.
 %% m_get([Id], _Msg, Context)->
@@ -63,6 +65,14 @@ fetch_data(skolenheter, OrgNo, Context) ->
     10*?MINUTE,
     Context);
 
+fetch_data(national_values, SchoolForm, Context) ->
+  z_depcache:memo(
+    fun() ->
+        fetch_data1(national_values, SchoolForm, Context)
+    end,
+    {national_values, SchoolForm},
+    Context);
+
 fetch_data(statistics, SchoolUnitCode, Context) ->
   fetch_data1(statistics, SchoolUnitCode, Context).
 
@@ -87,6 +97,29 @@ fetch_data1(skolenheter, OrgNo, Context) ->
     Error ->
       Error
   end;
+
+fetch_data1(national_values, <<"gy">>, Context) ->
+  fetch_data1(national_values, <<"gy/NA">>, Context);
+fetch_data1(national_values, SchoolForm, Context) ->
+  Options = [{timeout, ?TIMEOUT}, {'x-api-version', "v3"}],
+  case
+    fetch_hal_json(?API_URL ++ ?PE ++ "/statistics/national-values/" ++ binary_to_list(SchoolForm), Options, Context)
+  of
+    {ok, #{<<"body">> := B}} ->
+      STP = case maps:find(<<"studentsPerTeacherQuota">>, B) of
+              {ok, [#{<<"value">> := Q1}|_] }-> Q1;
+              _ -> <<"-">>
+            end,
+      CTQ = case maps:find(<<"certifiedTeachersQuota">>, B) of
+              {ok, [#{<<"value">> := Q2}|_]} -> Q2;
+              _ -> <<"-">>
+            end,
+      #{<<"studentsPerTeacherQuota">> => STP,
+        <<"certifiedTeachersQuota">> => CTQ};
+    _Error ->
+      <<"">>
+  end;
+
 fetch_data1(statistics, SchoolUnitCode, Context) ->
   Options = [{timeout, ?TIMEOUT}],
   case
@@ -143,7 +176,7 @@ find_in_statistics(Key, Map) when is_map(Map)->
     {ok, Value} -> {ok, Value};
     _ ->
       case maps:find(<<"programMetrics">>, Map) of
-        {ok, PM} -> 
+        {ok, PM} ->
           find_in_statistics1(Key, PM);
         _ ->
           {error, not_found}

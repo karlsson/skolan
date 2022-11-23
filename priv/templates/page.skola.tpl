@@ -27,16 +27,32 @@
                 </thead>
                 <tbody>
             {% for id in statistics %}
+                    {% with m.skolan_verket.national_values[id.type] as nv %}
                     <tr>
                     <th scope="row">{{ id.type }}</th>
-                    <td>{{id.studentsPerTeacherQuota }}</td>
-                    <td>{{id.certifiedTeachersQuota}}</td>
+                    <td>
+                    {{id.studentsPerTeacherQuota }}
+                    {% if nv != "" %}
+                      ( {{ nv.studentsPerTeacherQuota }} )
+                    {% endif %}
+                    </td>
+                    <td>
+                    {{id.certifiedTeachersQuota}}
+                    {% if nv != "" %}
+                      ( {{ nv.certifiedTeachersQuota }} )
+                    {% endif %}
+
+                    </td>
                     <td>{{id.hasLibrary}}</td>
                     </tr>
+                    {% endwith %}
             {% endfor %}
                 </tbody>
             </table>
             </p>
+            {% if nv != "" %}
+            <p>Siffror inom parentes avser riksgenomsnittet</p>
+            {% endif %}
             {% endif %}
         </div>
     </article>
