@@ -23,6 +23,9 @@
                     <th scope="col">Elever/barn per lärare</th>
                     <th scope="col">Andel behöriga lärare</th>
                     <th scope="col">Bibliotek</th>
+                    {% if statistics|filter:'salsaAverageDev' %}
+                    <th scope="col">SALSA Residual för<br/>genomsnittligt meritvärde</th>
+                    {% endif %}
                     </tr>
                 </thead>
                 <tbody>
@@ -44,6 +47,10 @@
 
                     </td>
                     <td>{{id.hasLibrary}}</td>
+                    {% if id.salsaAverageDev %}
+                    <td>{{ id.salsaAverageDev }}</td>
+                    {% endif %}
+
                     </tr>
                     {% endwith %}
             {% endfor %}

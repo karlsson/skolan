@@ -133,7 +133,7 @@ fetch_data1(statistics, SchoolUnitCode, Context) ->
             ({TS, Link}) -> % TS is <<"{gr,grs,gy,gys,fs,fsk,..}-statistics">>
               case string:split(TS,"-") of
                 [Type,_] ->
-                  {true, get_statistics(Type, Link, Context)};
+                  {true, get_statistics(Type, SchoolUnitCode, Link, Context)};
                 _ -> false
               end
           end,
@@ -142,14 +142,31 @@ fetch_data1(statistics, SchoolUnitCode, Context) ->
       Error
   end.
 
-get_statistics(Type, #{<<"href">> := Url},Context) ->
+get_statistics(Type, SchoolUnitCode, #{<<"href">> := Url},Context) ->
   Options = [{timeout, ?TIMEOUT}],
   case fetch_hal_json(Url , Options, Context) of
     {ok, #{<<"body">> := A}} ->
-      get_statistics1(Type, A);
+      StatMap = get_statistics1(Type, A),
+      get_salsa_statistics(Type, StatMap, SchoolUnitCode, Context);
     Error ->
       Error
   end.
+
+get_salsa_statistics(<<"gr">>, StatMap, SchoolUnitCode, Context) ->
+  Options = [{timeout, ?TIMEOUT}],
+  Url = ?API_URL ++ ?PE ++ "/statistics/all-schools/salsa/" ++ binary_to_list(SchoolUnitCode),
+  case fetch_hal_json(Url , Options, Context) of
+    {ok, #{<<"body">> := #{<<"compulsorySchoolUnitSalsaMetricList">> := [#{} = A|_]}}} ->
+      case maps:find(<<"salsaAverageGradesIn9thGradeDeviation">>, A) of
+          {ok, #{<<"value">> := Q1, <<"valueType">> := <<"EXISTS">>}} ->
+            StatMap#{<<"salsaAverageDev">> => Q1};
+          _ -> StatMap
+        end;
+    _Error ->
+      StatMap
+  end;
+get_salsa_statistics(_, StatMap, _, _) -> StatMap.
+
 
 get_statistics1(Type, A) ->
   STP = case find_in_statistics(<<"studentsPerTeacherQuota">>, A) of
