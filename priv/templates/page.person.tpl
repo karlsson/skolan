@@ -97,6 +97,45 @@
             </div>
         {% endif %}
 
+        {% if id.s.i_styrelse|is_visible as styrelsemedlem %}
+            <div class="connections">
+                {% with m.search[{latest cat="predicate" name="i_styrelse"}]|is_visible as medlempred %}
+                    <h3>Styrelsemedlemmar</h3>
+                {% endwith %}
+                <div class="list-items">
+                    {% for id in styrelsemedlem %}
+                        {% catinclude "_list_item.tpl" id %}
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+
+        {% if id.o.i_styrelse|is_visible as styrelsemedlem %}
+            <div class="connections">
+                {% with m.search[{latest cat="predicate" name="i_styrelse"}]|is_visible as medlempred %}
+                    <h3>{{ medlempred.title }}</h3>
+                {% endwith %}
+                <div class="list-items">
+                    {% for id in styrelsemedlem %}
+                        {% catinclude "_list_item.tpl" id %}
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+
+        {% if id.o.relation|is_visible as relation %}
+            <div class="connections">
+                {% with m.search[{latest cat="predicate" name="relation"}]|is_visible as relpred %}
+                    <h3>{{ relpred.title }}</h3>
+                {% endwith %}
+                <div class="list-items">
+                    {% for id in relation %}
+                        {% catinclude "_list_item.tpl" id %}
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+
         {% if id.s.about|is_visible as about %}
             <div class="connections">
                 {% with m.search[{latest cat="predicate" name="about"}]|is_visible as relpred %}
