@@ -48,13 +48,23 @@
             </div>
         {% endif %}
 
-        {% with m.search.query::%{
+        {% with m.category[id].is_a.koncern|if:[
+           "-pivot.skolan.no_of_school_units",
+           "pivot_title",
+           "-created"
+           ]:[
+           "pivot_title",
+           "-created"
+           ] as sorting
+        %}
+            {% with m.search.query::%{
                 cat: id,
-                sort: ["slug", "-created"],
+                sort: sorting,
                 pagelen: 20,
                 page: q.page
-            } as result
-        %}
+                } as result
+            %}
+
             <div class="connections paged" id="content-pager">
                 <h3>
                     {_ All _} <span>{{ id.title }}</span>
@@ -67,6 +77,7 @@
 
                 {% pager result=result id=id qargs hide_single_page %}
             </div>
+            {% endwith %}
         {% endwith %}
     </div>
 

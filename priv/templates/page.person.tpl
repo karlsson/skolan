@@ -2,8 +2,14 @@
 
 {% block content_after %}
    {% if m.rsc[id].is_cat.koncern %}
-       <p>Företaget är ett Koncernmoderbolag</p>
+       <p>Företaget är ett Koncernmoderbolag.</p>
    {% endif %}
+
+   {% if id.no_of_school_units|is_defined %}
+       <p><a href="https://www.merinfo.se/search?who={{ id.name|replace:['org'] }}" target="_blank">merinfo.se</a></p>
+       <p>Antal skolenheter: {{ id.no_of_school_units }}</p>
+   {% endif %}
+
     <div class="page-relations">
         {% if id.s.i_koncern|is_visible as i_koncern %}
             <div class="connections">

@@ -53,9 +53,11 @@
 %% Exports - if exports change then the module is restarted after
 %% compilation.
 -export([
+         init/1,
          manage_schema/2,
          manage_data/2,
-         observe_tick_12h/2
+         observe_tick_12h/2,
+         observe_custom_pivot/2
         ]).
 
 %% This is the main header file, it contains useful definitions and
@@ -63,6 +65,12 @@
 -include_lib("zotonic_core/include/zotonic.hrl").
 -include_lib("kernel/include/logger.hrl").
 
+-spec init(z:context()) -> ok.
+init(Context) ->
+    z_pivot_rsc:define_custom_pivot(?MODULE,
+                                    [{no_of_school_units, "int"}],
+                                    Context),
+    ok.
 
 %%====================================================================
 %% support functions go here
@@ -335,3 +343,29 @@ observe_tick_12h(tick_12h, _Context) ->
   ?LOG_INFO("And another 12 hours have passed..."),
   %% TODO add scheduled data aggregation from skolverket etc. APIs
   ok.
+
+observe_custom_pivot(#custom_pivot{ id = Id }, Context) ->
+  case m_rsc:is_a(Id, jurper, Context) of
+    true ->
+      HuvudMen = get_huvudmen(Id, Context),
+      NoOfSchoolUnits = lists:foldl(fun(H, Acc) ->
+                                        get_no_of_school_units(H, Context) + Acc
+                                    end, 0, [Id|HuvudMen]),
+      case NoOfSchoolUnits of
+        N when N > 0 ->
+          m_rsc:update(Id, #{<<"no_of_school_units">> => NoOfSchoolUnits}, Context),
+          {?MODULE, [{no_of_school_units, NoOfSchoolUnits}]};
+        _ ->
+          none
+      end;
+    false  ->
+      none
+  end.
+
+get_no_of_school_units(Id, Context) ->
+  SchoolUnits = m_rsc:s(Id, huvudman, Context),
+  length(SchoolUnits).
+
+%% In case it is a mother company there will be daughter companies
+get_huvudmen(Id, Context) ->
+  m_rsc:s(Id, i_koncern, Context).
