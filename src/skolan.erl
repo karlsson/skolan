@@ -363,7 +363,12 @@ observe_custom_pivot(#custom_pivot{ id = Id }, Context) ->
   end.
 
 get_no_of_school_units(Id, Context) ->
-  SchoolUnits = m_rsc:s(Id, huvudman, Context),
+  SUs = m_rsc:s(Id, huvudman, Context),
+  %% Filter out only active units
+  SchoolUnits =
+    [ SU || SU <- SUs,
+            {ok, <<"Aktiv">>} == maps:find(<<"status">>, m_rsc:get(SU,Context))
+    ],
   length(SchoolUnits).
 
 %% In case it is a mother company there will be daughter companies

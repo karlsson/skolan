@@ -7,7 +7,7 @@
 
    {% if id.no_of_school_units|is_defined %}
        <p><a href="https://www.merinfo.se/search?who={{ id.name|replace:['org'] }}" target="_blank">merinfo.se</a></p>
-       <p>Antal skolenheter: {{ id.no_of_school_units }}</p>
+       <p>Antal aktiva skolenheter: {{ id.no_of_school_units }}</p>
    {% endif %}
 
     <div class="page-relations">
@@ -46,7 +46,7 @@
 
         {% if id.s.owns|is_visible as owns %}
             <div class="connections">
-		        <h3>{_ Owner _}</h3>
+                    <h3>{_ Owner _}</h3>
                 <div class="list-items">
                     {% for id in owns %}
                         {% catinclude "_list_item.tpl" id %}
