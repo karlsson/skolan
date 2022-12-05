@@ -348,13 +348,17 @@ observe_custom_pivot(#custom_pivot{ id = Id }, Context) ->
   case m_rsc:is_a(Id, jurper, Context) of
     true ->
       HuvudMen = get_huvudmen(Id, Context),
-      NoOfSchoolUnits = lists:foldl(fun(H, Acc) ->
-                                        get_no_of_school_units(H, Context) + Acc
-                                    end, 0, [Id|HuvudMen]),
+      {NoOfSchoolUnits, ActiveSchoolUnits} =
+        lists:foldl(fun(H, {Acc1, Acc2}) ->
+                        {SU1, SU2} = get_no_of_school_units(H, Context),
+                        {SU1 + Acc1, SU2 + Acc2}
+                    end, {0,0}, [Id|HuvudMen]),
       case NoOfSchoolUnits of
+        %% A real huvudman has at least one school
+        %% But we only update the no of active ones
         N when N > 0 ->
-          m_rsc:update(Id, #{<<"no_of_school_units">> => NoOfSchoolUnits}, Context),
-          {?MODULE, [{no_of_school_units, NoOfSchoolUnits}]};
+          m_rsc:update(Id, #{<<"no_of_school_units">> => ActiveSchoolUnits}, Context),
+          {?MODULE, [{no_of_school_units, ActiveSchoolUnits}]};
         _ ->
           none
       end;
@@ -365,11 +369,9 @@ observe_custom_pivot(#custom_pivot{ id = Id }, Context) ->
 get_no_of_school_units(Id, Context) ->
   SUs = m_rsc:s(Id, huvudman, Context),
   %% Filter out only active units
-  SchoolUnits =
-    [ SU || SU <- SUs,
-            {ok, <<"Aktiv">>} == maps:find(<<"status">>, m_rsc:get(SU,Context))
-    ],
-  length(SchoolUnits).
+  ActiveSchoolUnits =
+    [ SU || SU <- SUs, <<"Aktiv">> == m_rsc:p(SU, <<"status">>, Context)],
+  {length(SUs), length(ActiveSchoolUnits)}.
 
 %% In case it is a mother company there will be daughter companies
 get_huvudmen(Id, Context) ->
