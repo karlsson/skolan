@@ -183,10 +183,37 @@ get_statistics1(Type, A) ->
                  {ok, Value3} -> case Value3 of true -> <<"Ja">>; false -> <<"Nej">> end;
                  _Error3 -> <<"-">>
                end,
+  VForm = get_vform(Type),
   #{<<"type">> => Type,
+    <<"vform">> => VForm,
     <<"studentsPerTeacherQuota">> => STP,
     <<"certifiedTeachersQuota">> => CTQ,
     <<"hasLibrary">> => HasLibrary}.
+
+%% 10 Förskola
+%% 16 Pedagogisk omsorg
+%% 15 Fritidshem
+%% 17 Öppen förskola
+%% 20 Öppen fritidsverksamhet
+%% 14 Förskoleklass
+%% 11 Grundskolan
+%% 21 Gymnasieskolan
+%% 12 Specialskola
+%% 13 Grundsärskolan
+%% 23 Gymnsasiesärskolan
+%% 32 Komvux
+%% 38 Kompletterande utbildningar
+%% 86 Omsorg på obekväma tider
+get_vform(<<"gr">>) -> 11;
+get_vform(<<"gy">>) -> 21;
+get_vform(<<"grs">>) -> 13;
+get_vform(<<"gys">>) -> 23;
+get_vform(<<"fsk">>) -> 14;
+get_vform(<<"fs">>) -> 10;
+get_vform(<<"fth">>) -> 15;
+get_vform(<<"sp">>) -> 12;
+get_vform(<<"vux">>) -> 32;
+get_vform(_) -> 38.
 
 find_in_statistics(Key, Map) when is_map(Map)->
   case maps:find(Key, Map) of

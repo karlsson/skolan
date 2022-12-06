@@ -29,26 +29,26 @@
                     </tr>
                 </thead>
                 <tbody>
-            {% for id in statistics %}
-                    {% with m.skolan_verket.national_values[id.type] as nv %}
+            {% for id1 in statistics %}
+                    {% with m.skolan_verket.national_values[id1.type] as nv %}
                     <tr>
-                    <th scope="row">{{ id.type }}</th>
+                    <th scope="row"><a href="https://www.skolverket.se/skolutveckling/statistik/sok-statistik-om-forskola-skola-och-vuxenutbildning?sok=SokA&vform={{ id1.vform }}&hman={{ id.o.huvudman.name|replace:['org'] }}&one={{ id.name|replace:['se'] }}&run=1" target="_blank"  title="Skolverkets statistiksidor">{{ id1.type }}</a></th>
                     <td>
-                    {{id.studentsPerTeacherQuota }}
+                    {{id1.studentsPerTeacherQuota }}
                     {% if nv != "" %}
                       ( {{ nv.studentsPerTeacherQuota }} )
                     {% endif %}
                     </td>
                     <td>
-                    {{id.certifiedTeachersQuota}}
+                    {{id1.certifiedTeachersQuota}}
                     {% if nv != "" %}
                       ( {{ nv.certifiedTeachersQuota }} )
                     {% endif %}
 
                     </td>
-                    <td>{{id.hasLibrary}}</td>
-                    {% if id.salsaAverageDev %}
-                    <td>{{ id.salsaAverageDev }}</td>
+                    <td>{{id1.hasLibrary}}</td>
+                    {% if id1.salsaAverageDev %}
+                    <td>{{ id1.salsaAverageDev }}</td>
                     {% endif %}
 
                     </tr>
@@ -78,7 +78,7 @@
                 </div>
             </div>
         {% endif %}
-        
+
         {% if id.s.relation|is_visible as relation %}
             <div class="connections">
                 {% with m.search[{latest cat="predicate" name="relation"}]|is_visible as relpred %}
