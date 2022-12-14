@@ -52,14 +52,17 @@
            "-pivot.skolan.no_of_school_units",
            "pivot_title",
            "-created"
-           ]:[
+           ]:(m.category[id].is_a.article|if:[
+           "-created"]:[
            "pivot_title",
            "-created"
-           ] as sorting
+           ]) as sorting
         %}
-            {% with m.search.query::%{
+
+            {% with m.search.paged.query::%{
                 cat: id,
                 sort: sorting,
+                hasobject: q.kw,
                 pagelen: 20,
                 page: q.page
                 } as result

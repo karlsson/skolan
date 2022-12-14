@@ -2,7 +2,9 @@
 
 {% block content %}
     <article>
-        <aside class="text-right small">Upplagd {{ id.publication_start | date:"Y-m-d" }} av {{m.rsc[id.creator_id].title }}</aside>
+        <aside class="text-right small">
+          Upplagd {{ id.publication_start | date:"Y-m-d" }} av {{m.rsc[id.creator_id].title }}
+        </aside>
         <h1>{{ id.title }}</h1>
         {% if id.depiction as dep %}
             {% include "_body_media.tpl" id=dep.id size="medium" %}
@@ -15,6 +17,12 @@
         <div class="body">
             {{ id.body|show_media }}
         </div>
+          {% if id.o.subject as kws %}
+            {% for kw in kws %}
+            <a role="button" class="btn btn-primary btn-sm" href="{% url page id='article' %}?kw={{kw}}"><span class="glyphicon glyphicon-tag" aria-hidden="true"></span><strong>{{ kw.title }}</strong></a>
+            {% if not forloop.last %}&nbsp;{% endif %}
+            {% endfor %}
+          {% endif %}
     </article>
 {% endblock %}
 
