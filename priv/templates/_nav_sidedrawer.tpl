@@ -18,20 +18,23 @@
      # The submenu is shown for all navigation items on the path to the
      # current page and below the current page.
      #}
-    {% with m.rsc.main_menu.id|menu_expand as menu %}
+    {% with m.rsc.main_menu.menu as menu %}
         {% with [
                     id,
                     id.category_id,
                     id.s.haspart[1],
                     is.s.haspart[1].category_id
                 ]|menu_trail:menu as trail %}
-            {% with trail|last as id %}
+            {% with trail|last as id1 %}
                 {% for menu in menu %}
                     {% if menu.id.is_visible %}
-                        <li class="{% if menu.id == id %}selected {% endif %} {% if menu.id|member:trail %} nav__show{% endif %}">
+                        <li class="{% if menu.id == id1 %}selected {% endif %} {% if menu.id|member:trail %} nav__show{% endif %}">
                             <a href="{{ menu.id.page_url }}">{{ menu.id.short_title|default:menu.id.title }}</a>
                             {% if menu.tree %}
                                 {% include "_nav_sidedrawer_submenu.tpl" menu=menu.tree %}
+                            {% endif %}
+                            {% if id.name == "skola" %}
+                            {% include "_nav_sidedrawer_facets.name.skola.tpl" %}
                             {% endif %}
                         </li>
                     {% endif %}

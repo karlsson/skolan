@@ -59,7 +59,7 @@
            ]) as sorting
         %}
 
-            {% with m.search.paged.query::%{
+            {% with m.search::%{
                 cat: id,
                 sort: sorting,
                 hasobject: q.kw,
