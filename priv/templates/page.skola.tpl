@@ -22,6 +22,7 @@
                     <th scope="col">Skolform</th>
                     <th scope="col">Elever/barn per lärare</th>
                     <th scope="col">Andel behöriga lärare</th>
+                    <th scope="col">Viktat elever per lärare</th>
                     <th scope="col">Bibliotek</th>
                     {% if statistics|filter:'salsaAverageDev' %}
                     <th scope="col">SALSA Residual för<br/>genomsnittligt meritvärde</th>
@@ -44,7 +45,12 @@
                     {% if nv != "" %}
                       ( {{ nv.certifiedTeachersQuota }} )
                     {% endif %}
-
+                    </td>
+                    <td>
+                    {{ id1.weightedStudentsPerTeacherQuota|format_sefloat }}
+                    {% if nv != "" %}
+                      ( {{ nv.weightedStudentsPerTeacherQuota|format_sefloat }} )
+                    {% endif %}
                     </td>
                     <td>{{id1.hasLibrary}}</td>
                     {% if id1.salsaAverageDev %}
@@ -58,7 +64,9 @@
             </table>
             </p>
             {% if nv != "" %}
-            <p>Siffror inom parentes avser riksgenomsnittet</p>
+            <p>Siffror inom parentes avser riksgenomsnittet.</p>
+            <p>Viktade världen dubblar elevantalet för andelen obehöriga lärare.
+            100*Elever per lärare/(50 + 0,5 * Andel behöriga lärare)</p>
             {% endif %}
             {% endif %}
         </div>
