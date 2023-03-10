@@ -35,3 +35,9 @@
 {# title, or for persons the rendering of "_name.tpl"               #}
 
 {% block su_status %}{{ id.status }}{% endblock %}
+{% block su_typ %}{{ id.skolenhet.Huvudman.Typ }}{% endblock %}
+{% block label_kommun %}{{ id.skolenhet.Kommun.Namn }}{% endblock %}
+{% block kommun %}{{ id.skolenhet.Kommun.Kommunkod }}{% endblock %}
+{#
+{% block gy_weighted_float %}{% for stats in id.statistics %}{% if stats.type == "gy" and stats.weightedStudentsPerTeacherQuota %}{{ stats.weightedStudentsPerTeacherQuota }}{% endif %}{% endfor %}{% endblock %}
+#}

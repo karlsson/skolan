@@ -16,7 +16,7 @@
 
 -export([get_admin_context/0, add_all_huvudmen/0,
          get_all_huvudmen/1, get_all_jurper/1,
-         get_all_su/1,
+         get_all_su/1, update_su/2,
          check_if_koncern/1, check_if_koncern/2,
          add_huvudmen/2,
          add_schools_for_all_huvudmen/1,
@@ -85,7 +85,7 @@ add_huvudman(#{
                 _ ->
                     {ok, _EdgeId} = m_edge:insert(CompId, i_koncern, KoncernId, Context)
             end,
-            add_schools_for_huvudman(CompId, Context),
+            %% add_schools_for_huvudman(CompId, Context),
             {ok, CompId}
     end;
 add_huvudman(#{
@@ -207,6 +207,70 @@ get_all_su(Page, Acc, Context) ->
             Acc ++ Result1;
         {ok, #search_result{result = Result2, next = NextPage}} ->
             get_all_su(NextPage, Acc ++ Result2, Context)
+    end.
+
+update_su(Id, Context) when is_integer(Id) ->
+    update_su(m_rsc:p(Id, name, Context), Context);
+update_su(<<"se", SchoolUnitCode/binary>>, Context) ->
+    update_su(SchoolUnitCode, Context);
+update_su(SchoolUnitCode, Context) when is_binary(SchoolUnitCode)->
+    try
+        M = m_skolan_verket:fetch_data(skolenhet, SchoolUnitCode, Context),
+        #{<<"Huvudman">> := #{<<"Typ">> := _Typ,
+                              <<"PeOrgNr">> := _PeOrgNr,
+                              <<"Namn">> := _Namn} = HuvudMan,
+          <<"Status">> := Status,
+          <<"Namn">> := Title,
+          <<"Besoksadress">> :=
+              #{<<"GeoData">> :=
+                    #{<<"Koordinat_WGS84_Lat">> := Lat,
+                     <<"Koordinat_WGS84_Lng">> := Lng
+                     }
+               }
+         } = M,
+        {ok, Id} =
+            create_if_not_exist(SchoolUnitCode, Title,
+                                skola,[{status, Status}], Context),
+        RSC = m_rsc:get(Id, Context),
+
+        {ok, HuvudManId} = add_huvudman(HuvudMan, Context),
+        m_edge:insert(Id, huvudman, HuvudManId, Context), %% {ok, _EdgeId}
+
+        Statistics =
+            case Status of
+                <<"Aktiv">> ->
+                    m_skolan_verket:fetch_data(statistics,
+                                               SchoolUnitCode,
+                                                Context);
+                _ ->
+                    undefined
+            end,
+        NewRSC = RSC#{<<"statistics">> => Statistics,
+                      <<"skolenhet">> => M},
+        NewRSC2 = case {Lat, Lng} of
+                      {undefined, undefined} ->
+                          NewRSC;
+                      {_,_} ->
+                          NewRSC#{
+                                  <<"location_lat">> =>
+                                      skolan_utils:bstring_to_float(Lat),
+                                  <<"location_lng">> =>
+                                      skolan_utils:bstring_to_float(Lng)}
+                  end,
+        m_rsc:update(Id, NewRSC2, Context)
+    catch
+        error:{badmatch, {error, {S, _, _, _, _}}}
+          when S == 410; S == 400 ->
+            case m_rsc:name_to_id(
+                          <<"se", SchoolUnitCode/binary>>,
+                          Context) of
+                {ok, Id2} ->
+                    m_rsc:delete(Id2, Context);
+                {error,{unknown_rsc,_}} ->
+                    do_nothing
+            end;
+        _:Error ->
+            Error
     end.
 
 %% ---------------------------------------------------------------

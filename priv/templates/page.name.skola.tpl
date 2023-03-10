@@ -2,8 +2,11 @@
 
 {% block content_after %}
     <div class="page-relations">
+        {# {% print m.req.qs %} #}
         {% with m.search::%{
-            filter: m.req.qs|make_filter,
+           'facet.su_status':m.req.qs|make_filter:'facet.su_status',
+           'facet.su_typ':m.req.qs|make_filter:'facet.su_typ',
+           'facet.kommun':m.req.qs|make_filter:'facet.kommun',
             cat: id,
             sort: ["pivot_title"],
             pagelen: 20,

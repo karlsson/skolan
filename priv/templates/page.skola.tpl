@@ -12,9 +12,10 @@
             {{ id.summary }}
         </p>
 
+        {# {% print m.rsc[id] %} #}
         <div class="body">
             {{ id.body|show_media }}
-            {% if m.skolan_verket[id.name]| is_visible as statistics %}
+            {% if id.statistics| is_visible as statistics %}
             <p>
             <table class="table">
                 <thead>
@@ -78,7 +79,7 @@
     <div class="page-relations">
         {% if id.o.huvudman|is_visible as huvudman %}
             <div class="connections">
-                <h3>Huvudman</h3>
+                <h3>Huvudman - {{ id.skolenhet.Huvudman.Typ }}</h3>
                 <div class="list-items">
                     {% for id in huvudman %}
                         {% catinclude "_list_item.tpl" id %}
