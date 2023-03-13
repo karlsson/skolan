@@ -33,7 +33,7 @@
                             {% if menu.tree %}
                                 {% include "_nav_sidedrawer_submenu.tpl" menu=menu.tree %}
                             {% endif %}
-                            {% if id.name == "skola" %}
+                            {% if menu.id.name == "skola" and id.name == "skola" %}
                             {% include "_nav_sidedrawer_facets.name.skola.tpl" %}
                             {% endif %}
                         </li>

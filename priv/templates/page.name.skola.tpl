@@ -1,12 +1,13 @@
 {% extends "page.tpl" %}
 
 {% block content_after %}
-    <div class="page-relations">
-        {# {% print m.req.qs %} #}
-        {% with m.search::%{
+        {% with m.search.facets::%{
            'facet.su_status':m.req.qs|make_filter:'facet.su_status',
            'facet.su_typ':m.req.qs|make_filter:'facet.su_typ',
            'facet.kommun':m.req.qs|make_filter:'facet.kommun',
+           'facet.gy_weighted':m.req.qs|make_filter:'gy_weighted':'<'|to_binary,
+           'facet.gr_weighted':m.req.qs|make_filter:'gr_weighted':'<'|to_binary,
+            text:q.qsu_title,
             cat: id,
             sort: ["pivot_title"],
             pagelen: 20,
@@ -17,13 +18,31 @@
             <h3>
                 {_ All _} <span>{{ id.title }}</span>
             </h3>
-            <div class="list-items">
-                {% for id in result %}
-                    {% catinclude "_list_item.tpl" id %}
-                {% endfor %}
-            </div>
+            <table class="table table-sm">
+            <thead>
+            <th scope="col">Skolenhet</th>
+            <th scope="col">Status</th>
+            <th scope="col">Typ</th>
+            <th scope="col">Viktad<br/>elevtäthet</th>
+            </thead>
+            <tbody>
+            {% for id in result %}
+                {% if id.is_visible %}
+                <tr {% if id.status == "Aktiv" %} class="table-primary" {% endif %}>
+                <td><a href="{{ id.page_url }}">{{ id.title|default:_"Untitled" }}</a></td>
+        <td>{{ id.status|first:2 }}</td>
+        <td>{{ id.skolenhet.Huvudman.Typ|first:2 }}</td>
+        <td>
+        {% for id1 in id.statistics %}
+        {{ id1.type }}:{{ id1.weightedStudentsPerTeacherQuota|format_sefloat }}<br/>
+        {% endfor %}
+        <td>
+    </tr>
+    {% endif %}
+            {% endfor %}
+            </tbody>
+            <table>
         {% pager result=result id=id qargs hide_single_page %}
         </div>
         {% endwith %}
-    </div>
 {% endblock %}

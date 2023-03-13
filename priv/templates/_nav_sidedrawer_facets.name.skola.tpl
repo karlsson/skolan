@@ -3,7 +3,12 @@
     {% with m.search.facets::%{
            'facet.su_status':m.req.qs|make_filter:'facet.su_status',
            'facet.su_typ':m.req.qs|make_filter:'facet.su_typ',
-           'facet.kommun':m.req.qs|make_filter:'facet.kommun'}|facet_part as fvs %}
+           'facet.kommun':m.req.qs|make_filter:'facet.kommun',
+           'facet.gy_weighted':m.req.qs|make_filter:'gy_weighted':'<'|to_binary,
+           'facet.gr_weighted':m.req.qs|make_filter:'gr_weighted':'<'|to_binary,
+            text:q.qsu_title,
+            cat: id
+    }|facet_part as fvs %}
   <li class="divider">Status
     {# {% print fvs %} #}
     {% for su_status in fvs.su_status.counts %}
@@ -33,6 +38,38 @@
     {% endfor %}
 </select>
     </div>
+  </li>
+  <script>
+  function ons(selection) {
+     var val1 = selection.value;
+     var slider = document.getElementById("gy_weighted");
+     slider.setAttribute("name","q"+val1+"_weighted");
+     if (val1 == "none"){
+        slider.disabled = true;
+     } else {
+        slider.disabled = false;
+     }
+     selection.form.submit();
+  }
+  </script>
+  <li class="divider">Viktat elever per lärare
+  <div class="form-check">
+  <label class="input-group-text" for="gyr_weighted">Skolform</label>
+  <select class="form-select" id="gyr_weighted" name="qgyr_weighted" onchange="ons(this)" >
+    <option selected value="none">Ingen</option>
+    <option value="gr" {{ (q.qgyr_weighted == "gr")|if:" selected":"" }}>Grundskola</option>
+    <option value="gy" {{ (q.qgyr_weighted == "gy")|if:" selected":"" }}>Gymnasium</option>
+  </select>
+</div>
+
+  <label for="gy_weighted" class="form-label">Max {{ q.qgy_weighted|if:q.qgy_weighted:q.qgr_weighted }}</label>
+<input type="range" class="form-range" min="0" max="50" step="1" id="gy_weighted" value="{{ q.qgy_weighted|if:q.qgy_weighted:q.qgr_weighted }}" onchange="this.form.submit()" name="q{{q.qgyr_weighted}}_weighted"  {{ (q.qgyr_weighted == "none")|if:" disabled":"" }} >
+  </li>
+  <li class="divider">
+  <div class="form-group">
+    <label for="su_title">Text innehåller</label>
+    <input type="text" name="qsu_title" class="form-control" id="su_title" value="{{q.qsu_title}}">
+  </div>
   </li>
     {% endwith %}
     </form>

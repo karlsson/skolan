@@ -3,7 +3,6 @@
 {% block content %}
     <article>
         <h1>{{ id.title }}</h1>
-
         {% if id.depiction as dep %}
             {% include "_body_media.tpl" id=dep.id size="medium" %}
         {% endif %}
@@ -71,7 +70,8 @@
             {% endif %}
             {% endif %}
         </div>
-    </article>
+   {% geomap_static longitude=id.location_lng latitude=id.location_lat %}
+   </article>
 {% endblock %}
 
 

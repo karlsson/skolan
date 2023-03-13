@@ -38,6 +38,5 @@
 {% block su_typ %}{{ id.skolenhet.Huvudman.Typ }}{% endblock %}
 {% block label_kommun %}{{ id.skolenhet.Kommun.Namn }}{% endblock %}
 {% block kommun %}{{ id.skolenhet.Kommun.Kommunkod }}{% endblock %}
-{#
-{% block gy_weighted_float %}{% for stats in id.statistics %}{% if stats.type == "gy" and stats.weightedStudentsPerTeacherQuota %}{{ stats.weightedStudentsPerTeacherQuota }}{% endif %}{% endfor %}{% endblock %}
-#}
+{% block gy_weighted_float %}{% for stats in id.statistics %}{% if stats.type == "gy" and stats.weightedStudentsPerTeacherQuota %}{{ stats.weightedStudentsPerTeacherQuota|format_float }}{% endif %}{% endfor %}{% endblock %}
+{% block gr_weighted_float %}{% for stats in id.statistics %}{% if stats.type == "gr" and stats.weightedStudentsPerTeacherQuota %}{{ stats.weightedStudentsPerTeacherQuota|format_float }}{% endif %}{% endfor %}{% endblock %}
