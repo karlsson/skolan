@@ -16,7 +16,7 @@
 
 -export([get_admin_context/0, add_all_huvudmen/0,
          get_all_huvudmen/1, get_all_jurper/1,
-         get_all_su/1, update_su/2,
+         get_all_su/1, update_all_su_from_remote/1, update_su/2,
          check_if_koncern/1, check_if_koncern/2,
          add_huvudmen/2,
          add_schools_for_all_huvudmen/1,
@@ -208,6 +208,14 @@ get_all_su(Page, Acc, Context) ->
         {ok, #search_result{result = Result2, next = NextPage}} ->
             get_all_su(NextPage, Acc ++ Result2, Context)
     end.
+
+update_all_su_from_remote(Context) ->
+    SUs = m_skolan_verket:fetch_data(skolenhet, Context),
+    lists:foreach(
+      fun(#{<<"Skolenhetskod">> := SchoolUnitCode }) ->
+              update_su(SchoolUnitCode, Context),
+              timer:sleep(200)
+      end, SUs).
 
 update_su(Id, Context) when is_integer(Id) ->
     update_su(m_rsc:p(Id, name, Context), Context);
