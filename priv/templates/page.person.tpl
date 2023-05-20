@@ -12,13 +12,14 @@
 
    {% if id.weightedStudentsPerTeacherQuotaGr|is_defined or
       id.weightedStudentsPerTeacherQuotaGy|is_defined %}
-      <div>Viktat antal elever per lärare, medeltal:</div>
+      <p>Viktat antal elever per lärare, medeltal:<br/>
    {% if id.weightedStudentsPerTeacherQuotaGr|is_defined %}
-          <div>- grundskola: {{ id.weightedStudentsPerTeacherQuotaGr|format_sefloat }}</div>
+          - grundskola: {{ id.weightedStudentsPerTeacherQuotaGr|format_sefloat }}</br>
    {% endif %}
    {% if id.weightedStudentsPerTeacherQuotaGy|is_defined %}
-       <div>- gymnasium: {{ id.weightedStudentsPerTeacherQuotaGy|format_sefloat }}</div>
+       - gymnasium: {{ id.weightedStudentsPerTeacherQuotaGy|format_sefloat }}
    {% endif %}
+      </p>
    {% endif %}
     <div class="page-relations">
         {% if id.s.i_koncern|is_visible as i_koncern %}
