@@ -57,7 +57,8 @@
          manage_schema/2,
          manage_data/2,
          observe_tick_12h/2,
-         observe_custom_pivot/2
+         observe_custom_pivot/2,
+         observe_custom_pivot1/2
         ]).
 
 %% This is the main header file, it contains useful definitions and
@@ -345,20 +346,32 @@ observe_tick_12h(tick_12h, _Context) ->
   ok.
 
 observe_custom_pivot(#custom_pivot{ id = Id }, Context) ->
+  observe_custom_pivot1(Id, Context).
+
+observe_custom_pivot1(Id, Context) ->
   case m_rsc:is_a(Id, jurper, Context) of
     true ->
-      HuvudMen = get_huvudmen(Id, Context),
-      {NoOfSchoolUnits, ActiveSchoolUnits} =
-        lists:foldl(fun(H, {Acc1, Acc2}) ->
-                        {SU1, SU2} = get_no_of_school_units(H, Context),
-                        {SU1 + Acc1, SU2 + Acc2}
-                    end, {0,0}, [Id|HuvudMen]),
+      HuvudMen = get_huvudmen(Id, Context), %% Empty unless koncern
+      {NoOfSchoolUnits, NoActiveSchoolUnits, WsptGrs, WsptGys} =
+        lists:foldl(fun(H, {Acc1, Acc2, WsptGrAcc, WsptGyAcc}) ->
+                        {SU1, SU2, WsptGr, WsptGy} = get_no_of_school_units(H, Context),
+                        {SU1 + Acc1, SU2 + Acc2, WsptGrAcc ++ WsptGr, WsptGyAcc ++ WsptGy}
+                    end, {0,0,[],[]}, [Id|HuvudMen]),
       case NoOfSchoolUnits of
         %% A real huvudman has at least one school
         %% But we only update the no of active ones
         N when N > 0 ->
-          m_rsc:update(Id, #{<<"no_of_school_units">> => ActiveSchoolUnits}, Context),
-          {?MODULE, [{no_of_school_units, ActiveSchoolUnits}]};
+          Map1 = #{<<"no_of_school_units">> => NoActiveSchoolUnits},
+          Map2 = if length(WsptGrs) > 0 ->
+            Map1#{<<"weightedStudentsPerTeacherQuotaGr">> => (lists:sum(WsptGrs)/length(WsptGrs)) };
+            true -> Map1
+          end,
+          Map3 = if length(WsptGys) > 0 ->
+            Map2#{<<"weightedStudentsPerTeacherQuotaGy">> => (lists:sum(WsptGys)/length(WsptGys)) };
+            true -> Map2
+          end,
+          m_rsc:update(Id, Map3, Context),
+          {?MODULE, [{no_of_school_units, NoActiveSchoolUnits}]};
         _ ->
           none
       end;
@@ -371,8 +384,31 @@ get_no_of_school_units(Id, Context) ->
   %% Filter out only active units
   ActiveSchoolUnits =
     [ SU || SU <- SUs, <<"Aktiv">> == m_rsc:p(SU, <<"status">>, Context)],
-  {length(SUs), length(ActiveSchoolUnits)}.
+
+  F = fun
+    (ASU, {GrAcc, GyAcc}) ->
+      add_weighted(m_rsc:p(ASU, <<"statistics">>, Context), {GrAcc, GyAcc})
+    end,
+
+  {WsptGrs, WsptGys} =
+    lists:foldl(F, {[], []}, ActiveSchoolUnits),
+
+  {length(SUs), length(ActiveSchoolUnits), WsptGrs, WsptGys}.
+
 
 %% In case it is a mother company there will be daughter companies
 get_huvudmen(Id, Context) ->
   m_rsc:s(Id, i_koncern, Context).
+
+add_weighted([H|T], Acc) ->
+  NewAcc = add_weighted(H, Acc),
+  add_weighted(T, NewAcc);
+add_weighted([], Acc) -> Acc;
+add_weighted(#{<<"type">> := <<"gr">>, <<"weightedStudentsPerTeacherQuota">> := WSPT},
+  {GrAcc, GyAcc}) when is_float(WSPT) ->
+  {[WSPT | GrAcc], GyAcc};
+add_weighted(#{<<"type">> := <<"gy">>, <<"weightedStudentsPerTeacherQuota">> := WSPT},
+  {GrAcc, GyAcc}) when is_float(WSPT) ->
+  {GrAcc,[WSPT | GyAcc]};
+add_weighted(_, Acc) ->
+  Acc.

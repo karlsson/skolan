@@ -10,6 +10,16 @@
        <p>Antal aktiva skolenheter: {{ id.no_of_school_units }}</p>
    {% endif %}
 
+   {% if id.weightedStudentsPerTeacherQuotaGr|is_defined or
+      id.weightedStudentsPerTeacherQuotaGy|is_defined %}
+      <div>Viktat antal elever per lärare, medeltal:</div>
+   {% if id.weightedStudentsPerTeacherQuotaGr|is_defined %}
+          <div>- grundskola: {{ id.weightedStudentsPerTeacherQuotaGr|format_sefloat }}</div>
+   {% endif %}
+   {% if id.weightedStudentsPerTeacherQuotaGy|is_defined %}
+       <div>- gymnasium: {{ id.weightedStudentsPerTeacherQuotaGy|format_sefloat }}</div>
+   {% endif %}
+   {% endif %}
     <div class="page-relations">
         {% if id.s.i_koncern|is_visible as i_koncern %}
             <div class="connections">
