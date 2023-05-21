@@ -22,7 +22,9 @@
          add_schools_for_all_huvudmen/1,
          add_schools_for_huvudmen/2, add_schools_for_huvudman/2,
          get_koncern/1, get_stored_item/3,
-         stored_school_unit_nos/1, stored_school_unit_nos/2
+         stored_school_unit_nos/1, stored_school_unit_nos/2,
+         get_all_su_kod/1, get_all_su_kod_from_remote/1,
+         remove_old_zombies/1
         ]).
 
 -include_lib("zotonic_core/include/zotonic.hrl").
@@ -209,6 +211,16 @@ get_all_su(Page, Acc, Context) ->
             get_all_su(NextPage, Acc ++ Result2, Context)
     end.
 
+get_all_su_kod(Context) ->
+    [string:slice(m_rsc:p(A,<<"name">>, Context), 2) || A <- get_all_su(Context)].
+
+get_all_su_kod_from_remote(Context) ->
+    SUs = m_skolan_verket:fetch_data(skolenhet, Context),
+    [SchoolUnitCode || #{<<"Skolenhetskod">> := SchoolUnitCode} <- SUs].
+remove_old_zombies(Context) ->
+    Zombies = skolan_collect:get_all_su_kod(Context) -- skolan_collect:get_all_su_kod_from_remote(Context),
+    lists:foreach(fun(SchoolUnitCode) -> update_su(SchoolUnitCode, Context) end, Zombies).
+
 update_all_su_from_remote(Context) ->
     SUs = m_skolan_verket:fetch_data(skolenhet, Context),
     lists:foreach(
@@ -242,7 +254,17 @@ update_su(SchoolUnitCode, Context) when is_binary(SchoolUnitCode)->
         RSC = m_rsc:get(Id, Context),
 
         {ok, HuvudManId} = add_huvudman(HuvudMan, Context),
-        m_edge:insert(Id, huvudman, HuvudManId, Context), %% {ok, _EdgeId}
+
+        case m_rsc:o(Id, huvudman, Context) of
+            [HuvudManId] ->
+                ok;
+            [] ->
+                m_edge:insert(Id, huvudman, HuvudManId, Context); %% {ok, _EdgeId}
+            HuvudMans -> %% There is a new huvudman
+                Removes = HuvudMans -- HuvudManId, %% Just to be sure not to remove any right one
+                lists:foreach(fun(HId) -> m_edge:delete(Id, huvudman, HId, Context) end, Removes),
+                m_edge:insert(Id, huvudman, HuvudManId, Context) %% {ok, _EdgeId}
+        end,
 
         Statistics =
             case Status of
@@ -268,11 +290,17 @@ update_su(SchoolUnitCode, Context) when is_binary(SchoolUnitCode)->
         m_rsc:update(Id, NewRSC2, Context)
     catch
         error:{badmatch, {error, {S, _, _, _, _}}}
-          when S == 410; S == 400 ->
+          when S == 410; S == 400; S == 404 ->
             case m_rsc:name_to_id(
                           <<"se", SchoolUnitCode/binary>>,
                           Context) of
                 {ok, Id2} ->
+                    ?LOG_INFO(#{
+                        text => <<"SchoolUnitCode not found at Skolverket - removing from database">>,
+                        id => Id2,
+                        school_unit_code => SchoolUnitCode,
+                        reason => not_found
+                    }),
                     m_rsc:delete(Id2, Context);
                 {error,{unknown_rsc,_}} ->
                     do_nothing
