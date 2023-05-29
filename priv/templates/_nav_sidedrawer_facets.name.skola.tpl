@@ -6,6 +6,7 @@
            'facet.kommun':m.req.qs|make_filter:'facet.kommun',
            'facet.gy_weighted':m.req.qs|make_filter:'gy_weighted':'<'|to_binary,
            'facet.gr_weighted':m.req.qs|make_filter:'gr_weighted':'<'|to_binary,
+           'facet.is_salsa':m.req.qs|make_filter:'facet.is_salsa',
             text:q.qsu_title,
             cat: id
     }|facet_part as fvs %}
@@ -64,6 +65,11 @@
 
   <label for="gy_weighted" class="form-label">Max {{ q.qgy_weighted|if:q.qgy_weighted:q.qgr_weighted }}</label>
 <input type="range" class="form-range" min="0" max="50" step="1" id="gy_weighted" value="{{ q.qgy_weighted|if:q.qgy_weighted:q.qgr_weighted }}" onchange="this.form.submit()" name="q{{q.qgyr_weighted}}_weighted"  {{ (q.qgyr_weighted == "none")|if:" disabled":"" }} >
+  </li>
+  <li class="divider">
+    <div class="form-check">
+         Enbart de med salsa: <input class="form-check-input" type="checkbox" value="true" id="is_salsa" {% if "true"|is_checked:"qfacet.is_salsa":m.req.qs %} checked {% endif %} onchange="this.form.submit()" name="qfacet.is_salsa">
+    </div>
   </li>
   <li class="divider">
   <div class="form-group">

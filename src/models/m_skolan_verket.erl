@@ -52,6 +52,8 @@ m_get([<<"se", SchoolUnitCode/binary>>], _Msg, Context)->
   {ok, {fetch_data(statistics, SchoolUnitCode, Context),[]}};
 m_get([<<"national_values">>, SchoolForm], _Msg, Context)->
   {ok, {fetch_data(national_values, SchoolForm, Context),[]}};
+m_get([<<"salsa">>], _Msg, Context) ->
+  {ok, {fetch_data(salsa, Context),[]}};
 m_get(_, _Msg, _Context) ->
   {error, <<"Argument skall vara, huvudman, org<organisationsnummer>, se<skolenhetskod. ",
             "Exempelvis org5568089246">>}.
@@ -131,7 +133,23 @@ fetch_data1(huvudman, Context) ->
 fetch_data1(skolenhet, Context) ->
     {ok, A} = z_fetch:fetch_json(?API_URL ++ ?SK_ENHET_REG ++ "/skolenhet",
                                fetch_options(), Context),
-    maps:get(<<"Skolenheter">>, A).
+    maps:get(<<"Skolenheter">>, A);
+
+%% Get salsa values for all school units that have them.
+%%   "salsaAverageGradesIn9thGradeActual"
+%%   "salsaAverageCalculated"
+%%   "salsaAverageGradesIn9thGradeDeviation"
+%%   "salsaRequirementsReachedActual"
+%%   "salsaRequirementsReachedCalculated"
+%%   "salsaRequirementsReachedDeviation"
+%%   "salsaNewlyImmigratedQuota"
+%%   "salsaBoysQuota"
+%%   "salsaParentsEducation"
+fetch_data1(salsa, Context) ->
+    {ok, #{<<"body">> := A}}
+        = fetch_hal_json(?API_URL ++ ?PE ++ "/statistics/all-schools/salsa",
+                         fetch_options(), Context),
+    maps:get(<<"compulsorySchoolUnitSalsaMetricList">>, A).
 
 fetch_data1(huvudman, OrgNo, Context) ->
     {ok, A} =

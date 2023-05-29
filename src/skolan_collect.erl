@@ -17,6 +17,7 @@
 -export([get_admin_context/0, add_all_huvudmen/0,
          get_all_huvudmen/1, get_all_jurper/1,
          get_all_su/1, update_all_su_from_remote/1, update_su/2,
+         update_all_salsa/1, update_salsa/2,
          check_if_koncern/1, check_if_koncern/2,
          add_huvudmen/2,
          add_schools_for_all_huvudmen/1,
@@ -309,6 +310,13 @@ update_su(SchoolUnitCode, Context) when is_binary(SchoolUnitCode)->
             Error
     end.
 
+update_all_salsa(Context) ->
+    Salsas = m_skolan_verket:fetch_data(salsa, Context),
+    lists:foreach(fun(Salsa) -> update_salsa(Salsa, Context) end, Salsas).
+
+update_salsa(#{<<"schoolUnitCode">> := SUC} = Salsa, Context) ->
+    m_rsc:update(<<"se", SUC/binary>>,
+                 #{<<"salsa">> => Salsa}, Context).
 %% ---------------------------------------------------------------
 
 -spec create_if_not_exist(binary(), binary(), atom(), z:context())->
