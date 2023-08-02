@@ -14,7 +14,7 @@
         {# {% print m.rsc[id] %} #}
         <div class="body">
             {{ id.body|show_media }}
-            {% if id.statistics| is_visible as statistics %}
+            {% if id.statistics as statistics %}
             <p>
             <table class="table">
                 <thead>
@@ -33,7 +33,7 @@
             {% for id1 in statistics %}
                     {% with m.skolan_verket.national_values[id1.type] as nv %}
                     <tr>
-                    <th scope="row"><a href="https://www.skolverket.se/skolutveckling/statistik/sok-statistik-om-forskola-skola-och-vuxenutbildning?sok=SokA&vform={{ id1.vform }}&hman={{ id.o.huvudman.name|replace:['org'] }}&one={{ id.name|replace:['se'] }}&run=1" target="_blank"  title="Skolverkets statistiksidor">{{ id1.type }}</a></th>
+                    <th scope="row"><a href="https://www.skolverket.se/skolutveckling/statistik/sok-statistik-om-forskola-skola-och-vuxenutbildning?sok=SokB&niva=S&nivaval={{ id.skolenhet.Kommun.Kommunkod }}&skola={{ id.name|replace:['se'] }}&vform={{ id1.vform }}&run=1" target="_blank"  title="Skolverkets statistiksidor">{{ id1.type }}</a></th>
                     <td>
                     {{id1.studentsPerTeacherQuota }}
                     {% if nv != "" %}

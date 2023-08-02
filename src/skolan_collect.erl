@@ -219,7 +219,7 @@ get_all_su_kod_from_remote(Context) ->
     SUs = m_skolan_verket:fetch_data(skolenhet, Context),
     [SchoolUnitCode || #{<<"Skolenhetskod">> := SchoolUnitCode} <- SUs].
 remove_old_zombies(Context) ->
-    Zombies = skolan_collect:get_all_su_kod(Context) -- skolan_collect:get_all_su_kod_from_remote(Context),
+    Zombies = get_all_su_kod(Context) -- get_all_su_kod_from_remote(Context),
     lists:foreach(fun(SchoolUnitCode) -> update_su(SchoolUnitCode, Context) end, Zombies).
 
 update_all_su_from_remote(Context) ->
