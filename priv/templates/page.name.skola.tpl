@@ -21,7 +21,7 @@
             </h3>
             <table class="table table-sm">
             <thead>
-            <th scope="col">Skolenhet</th>
+            <th scope="col">Skolenhet ( Koncern )</th>
             <th scope="col">Status</th>
             <th scope="col">Typ</th>
             <th scope="col">Viktad<br/>elevtäthet</th>
@@ -36,7 +36,16 @@
             {% for id in result %}
                 {% if id.is_visible %}
                 <tr {% if id.status == "Aktiv" %} class="table-primary" {% endif %}>
-                <td><a href="{{ id.page_url }}">{{ id.title|default:_"Untitled" }}</a></td>
+                <td>
+                <a href="{{ id.page_url }}">{{ id.title|default:_"Untitled" }}</a>
+                {% if id.skolenhet.Huvudman.Typ == "Enskild" %}
+                {% if id.o.huvudman.o.i_koncern.title %}
+                 ( {{ id.o.huvudman.o.i_koncern.title }} )
+                {% elseif id.o.huvudman.is_a.koncern %}
+                 ( {{ id.o.huvudman.title }} )
+                {% endif %}
+                {% endif %}
+                </td>
         <td>{{ id.status|first:2 }}</td>
         <td>{{ id.skolenhet.Huvudman.Typ|first:2 }}</td>
         <td>
