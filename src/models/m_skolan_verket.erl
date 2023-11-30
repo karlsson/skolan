@@ -54,6 +54,8 @@ m_get([<<"national_values">>, SchoolForm], _Msg, Context)->
   {ok, {fetch_data(national_values, SchoolForm, Context),[]}};
 m_get([<<"salsa">>], _Msg, Context) ->
   {ok, {fetch_data(salsa, Context),[]}};
+m_get([<<"program">>], _Msg, Context) ->
+  {ok, {fetch_data(program, Context),[]}};
 m_get(_, _Msg, _Context) ->
   {error, <<"Argument skall vara, huvudman, org<organisationsnummer>, se<skolenhetskod. ",
             "Exempelvis org5568089246">>}.
@@ -149,7 +151,15 @@ fetch_data1(salsa, Context) ->
     {ok, #{<<"body">> := A}}
         = fetch_hal_json(?API_URL ++ ?PE ++ "/statistics/all-schools/salsa",
                          fetch_options(), Context),
-    maps:get(<<"compulsorySchoolUnitSalsaMetricList">>, A).
+    maps:get(<<"compulsorySchoolUnitSalsaMetricList">>, A);
+
+fetch_data1(program, Context) ->
+     case fetch_hal_json(?API_URL ++ ?PE ++ "/support/programs",
+                       fetch_options(), Context) of
+         {ok, #{<<"body">> := #{<<"gy">> := A}}} -> A;
+         _ -> []
+     end.
+
 
 fetch_data1(huvudman, OrgNo, Context) ->
     {ok, A} =

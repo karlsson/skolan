@@ -25,7 +25,7 @@
             <th scope="col">Status</th>
             <th scope="col">Typ</th>
             <th scope="col">Viktad<br/>elevtäthet</th>
-            <th scope="col">Salsa</br>
+            <th scope="col">Salsa (gr), Program (gy)</br>
               Föräldrarnas genomsnittliga utbildningsnivå : </br>
               Andel nyinvandrade (%) : </br>
               Andel pojkar(%) : </br>
@@ -59,6 +59,8 @@
         {{ id.salsa.salsaNewlyImmigratedQuota.value }} :
         {{ id.salsa.salsaBoysQuota.value }} :
         {{ id.salsa.salsaAverageGradesIn9thGradeDeviation.value }}
+        {% elseif id.statistics.type == "gy" %}
+        {{ id.skolenhet.Skolformer|gy_programs }}
         {% endif %}
         </td>
     </tr>

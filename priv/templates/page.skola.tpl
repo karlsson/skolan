@@ -56,12 +56,19 @@
                     {% if id1.salsaAverageDev %}
                     <td>{{ id1.salsaAverageDev }}</td>
                     {% endif %}
-
                     </tr>
-                    {% endwith %}
+            {% endwith %}
             {% endfor %}
-                </tbody>
+            </tbody>
             </table>
+            {% with id.skolenhet.Skolformer|gy_programs as progs %}
+            Program/Årskurs: {{ progs }}</br>
+              {% for pr in m.skolan_verket.program %}
+                {% if (pr.code | member:progs)  %}
+                  {{ pr.code }}-{{ pr.name }}&nbsp;&nbsp;
+                {% endif %}
+              {% endfor %}
+            {% endwith %}
             </p>
             {% if nv != "" %}
             <p>Siffror inom parentes avser riksgenomsnittet.</p>
@@ -71,6 +78,7 @@
             {% endif %}
         </div>
    {% geomap_static longitude=id.location_lng latitude=id.location_lat %}
+   <p>{{ id.skolenhet.Besoksadress.Ort }}</p>
    </article>
 {% endblock %}
 
