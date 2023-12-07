@@ -33,9 +33,20 @@
                             {% if menu.tree %}
                                 {% include "_nav_sidedrawer_submenu.tpl" menu=menu.tree %}
                             {% endif %}
+
                             {% if menu.id.name == "skola" and id.name == "skola" %}
-                            {% include "_nav_sidedrawer_facets.name.skola.tpl" %}
-                            {% endif %}
+<ul class="nav nav-stacked">
+                            <div id="live1"></div>
+</ul>
+                           {% live topic="model/location/event/qlist"
+                              template="_nav_sidedrawer_facets.name.skola.tpl"
+                              target="live1"
+                              method="patch"
+                              id=id
+                              is_new_query
+                            %}
+
+                         {% endif %}
                         </li>
                     {% endif %}
                 {% endfor %}
