@@ -1,18 +1,10 @@
-{% with (q.payload|make_filter) as qpayload %}
-    {% with m.search.facets::%{
-           'facet.su_status':qpayload|make_filter:'facet.su_status',
-           'facet.su_typ':qpayload|make_filter:'facet.su_typ',
-           'facet.kommun':qpayload|make_filter:'facet.kommun',
-           'facet.gy_weighted':(qpayload|make_filter:'gyr_weighted'|first == "gy")|
-             if:(qpayload|make_filter:'gyrr_weighted':'<'|to_binary):"",
-           'facet.gr_weighted':(qpayload|make_filter:'gyr_weighted'|first == "gr")|
-             if:(qpayload|make_filter:'gyrr_weighted':'<'|to_binary):"",
-           'facet.is_salsa':qpayload|make_filter:'facet.is_salsa',
-            text:qpayload|make_filter:'su_title',
+    {% with m.search::%{ qargs: true,
+           'facet.gy_weighted':(q.gyr_weighted == "gy")|if:(['<', q.gyrr_weighted]|stringify):"",
+           'facet.gr_weighted':(q.gyr_weighted == "gr")|if:(['<', q.gyrr_weighted]|stringify):"",
             cat: id,
             sort: ["pivot_title"],
             pagelen: 20,
-            page: q.payload|make_filter:'page'|first
+            page: q.page
             } as result
         %}
         <div class="connections paged" id="content-pager">
@@ -70,13 +62,13 @@
             </table>
 
         </div>
-        {% with qpayload|qargs_filter|join:"," as qpp %}
+
         {% pager dispatch="none"
              result=result
              topic="model/location/post/push"
-             qpayload=qpp
+             qargs
+             gyr_weighted=q.gyr_weighted
+             gyrr_weighted=q.gyrr_weighted
              hide_single_page
         %}
-        {% endwith %}
-    {% endwith %}
-{% endwith %}
+   {% endwith %}

@@ -40,9 +40,10 @@
 </ul>
                            {% live topic="model/location/event/qlist"
                               template="_nav_sidedrawer_facets.name.skola.tpl"
-                              target="live1"
                               method="patch"
+                              target="live1"
                               id=id
+                              qargs
                               is_new_query
                             %}
 

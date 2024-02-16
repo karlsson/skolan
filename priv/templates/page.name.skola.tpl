@@ -7,6 +7,6 @@
            target="live2"
            method="patch"
            id=id
-           is_new_query
+           qargs
         %}
 {% endblock %}
