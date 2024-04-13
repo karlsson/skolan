@@ -40,7 +40,6 @@
 </ul>
                            {% live topic="model/location/event/qlist"
                               template="_nav_sidedrawer_facets.name.skola.tpl"
-                              method="patch"
                               target="live1"
                               id=id
                               qargs
