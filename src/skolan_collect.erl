@@ -262,7 +262,7 @@ update_su(SchoolUnitCode, Context) when is_binary(SchoolUnitCode)->
             [] ->
                 m_edge:insert(Id, huvudman, HuvudManId, Context); %% {ok, _EdgeId}
             HuvudMans -> %% There is a new huvudman
-                Removes = HuvudMans -- HuvudManId, %% Just to be sure not to remove any right one
+                Removes = HuvudMans -- [HuvudManId], %% Just to be sure not to remove any right one
                 lists:foreach(fun(HId) -> m_edge:delete(Id, huvudman, HId, Context) end, Removes),
                 m_edge:insert(Id, huvudman, HuvudManId, Context) %% {ok, _EdgeId}
         end,
@@ -307,6 +307,11 @@ update_su(SchoolUnitCode, Context) when is_binary(SchoolUnitCode)->
                     do_nothing
             end;
         _:Error ->
+            ?LOG_ERROR(#{
+                        text => <<"Error updating school unit">>,
+                        school_unit_code => SchoolUnitCode,
+                        reason => Error
+                       }),
             Error
     end.
 
