@@ -243,11 +243,7 @@ update_su(SchoolUnitCode, Context) when is_binary(SchoolUnitCode)->
           <<"Status">> := Status,
           <<"Namn">> := Title,
           <<"Besoksadress">> :=
-              #{<<"GeoData">> :=
-                    #{<<"Koordinat_WGS84_Lat">> := Lat,
-                     <<"Koordinat_WGS84_Lng">> := Lng
-                     }
-               }
+              #{<<"GeoData">> := GeoData}
          } = M,
         {ok, Id} =
             create_if_not_exist(SchoolUnitCode, Title,
@@ -278,16 +274,20 @@ update_su(SchoolUnitCode, Context) when is_binary(SchoolUnitCode)->
             end,
         NewRSC = RSC#{<<"statistics">> => Statistics,
                       <<"skolenhet">> => M},
-        NewRSC2 = case {Lat, Lng} of
-                      {undefined, undefined} ->
-                          NewRSC;
-                      {_,_} ->
-                          NewRSC#{
-                                  <<"location_lat">> =>
-                                      skolan_utils:bstring_to_float(Lat),
-                                  <<"location_lng">> =>
-                                      skolan_utils:bstring_to_float(Lng)}
-                  end,
+
+        NewRSC2 =
+            case GeoData of
+                #{<<"Koordinat_WGS84_Lat">> := Lat,
+                  <<"Koordinat_WGS84_Lng">> := Lng
+                 } when Lat =/= undefined, Lng =/= undefined ->
+                    NewRSC#{
+                            <<"location_lat">> =>
+                                skolan_utils:bstring_to_float(Lat),
+                            <<"location_lng">> =>
+                                skolan_utils:bstring_to_float(Lng)};
+                _  ->
+                    NewRSC
+            end,
         m_rsc:update(Id, NewRSC2, Context)
     catch
         error:{badmatch, {error, {S, _, _, _, _}}}

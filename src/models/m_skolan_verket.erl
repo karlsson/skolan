@@ -209,22 +209,25 @@ fetch_data1(national_values, SchoolForm, Context) ->
   end;
 
 fetch_data1(statistics, SchoolUnitCode, Context) ->
-    {ok, #{<<"body">> := #{<<"_links">> := LinkMap}}} =
-        fetch_hal_json(?API_URL ++ ?PE ++ "/school-units/" ++
-                           binary_to_list(SchoolUnitCode)  ++ "/statistics" ,
-                       fetch_options(), Context),
-    Links = maps:to_list(LinkMap),
-    F = fun
-            ({<<"self">>, _}) ->
-                false;
-            ({TS, Link}) -> % TS is <<"{gr,grs,gy,gys,fs,fsk,..}-statistics">>
-                case string:split(TS,"-") of
-                    [Type,_] ->
-                        {true, get_statistics(Type, SchoolUnitCode, Link, Context)};
-                    _ -> false
-                end
-        end,
-    lists:filtermap(F, Links).
+    case fetch_hal_json(?API_URL ++ ?PE ++ "/school-units/" ++
+                            binary_to_list(SchoolUnitCode)  ++ "/statistics" ,
+                        fetch_options(), Context) of
+        {ok, #{<<"body">> := #{<<"_links">> := LinkMap}}} ->
+            Links = maps:to_list(LinkMap),
+            F = fun
+                    ({<<"self">>, _}) ->
+                        false;
+                    ({TS, Link}) -> % TS is <<"{gr,grs,gy,gys,fs,fsk,..}-statistics">>
+                        case string:split(TS,"-") of
+                            [Type,_] ->
+                                {true, get_statistics(Type, SchoolUnitCode, Link, Context)};
+                            _ -> false
+                        end
+                end,
+            lists:filtermap(F, Links);
+        _ ->
+            undefined
+    end.
 
 fetch_data1(huvudman, OrgNo, SearchDate, Context) ->
     {ok, A} =
