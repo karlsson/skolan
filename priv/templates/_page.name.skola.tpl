@@ -17,7 +17,7 @@
             <th scope="col">Status</th>
             <th scope="col">Typ</th>
             <th scope="col">Viktad<br/>elevtäthet</th>
-            <th scope="col">Salsa (gr), Program (gy)
+            <th scope="col">Salsa (gr)
               <div>Föräldrarnas genomsnittliga utbildningsnivå : </div>
               <div>Andel nyinvandrade (%) : </div>
               <div>Andel pojkar(%) : </div>

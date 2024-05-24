@@ -1,5 +1,4 @@
 {% extends "base.tpl" %}
-
 {% block content %}
     <article>
         <h1>{{ id.title }}</h1>
@@ -62,21 +61,26 @@
             </tbody>
             </table>
             {% with id.skolenhet.Skolformer|gy_programs as progs %}
-            Program/Årskurs: {{ progs }}</br>
+              {% if progs %}
+              Årskurs: {{ progs }}</br>
               {% for pr in m.skolan_verket.program %}
                 {% if (pr.code | member:progs)  %}
                   {{ pr.code }}-{{ pr.name }}&nbsp;&nbsp;
                 {% endif %}
               {% endfor %}
+              {% endif %}
             {% endwith %}
             </p>
             {% if nv != "" %}
             <p>Siffror inom parentes avser riksgenomsnittet.</p>
-            <p>Viktade världen dubblar elevantalet för andelen obehöriga lärare.
-            100*Elever per lärare/(50 + 0,5 * Andel behöriga lärare)</p>
+            Viktade värden dubblar elevantalet för andelen obehöriga lärare.<br/>
+            100*Elever per lärare/(50 + 0,5 * Andel behöriga lärare)
             {% endif %}
             {% endif %}
         </div>
+        {% if id.skolenhet.Webbadress as webb %}
+        <p><a class="btn btn-primary" href="{{ webb }}" target="_blank">Hemsida</a></p>
+        {% endif %}
    {% geomap_static longitude=id.location_lng latitude=id.location_lat %}
    <p>{{ id.skolenhet.Besoksadress.Ort }}</p>
    </article>
