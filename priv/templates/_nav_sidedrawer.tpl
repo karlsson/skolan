@@ -36,9 +36,12 @@
 
                             {% if menu.id.name == "skola" and id.name == "skola" %}
 <ul class="nav nav-stacked">
+    <div id="skola_live"></div>
                            {% live topic="model/location/event/qlist"
                               template="_nav_sidedrawer_facets.name.skola.tpl"
                               id=id
+                              target="skola_live"
+                              method="patch"
                               qargs
                               is_new_query
                             %}

@@ -33,14 +33,20 @@
   </li>
   <li class="divider">Kommuner
     <div class="form-check">
-<select class="form-select" multiple aria-label="multiple select kommun" name="qfacet.kommun[]" >
-  <option value="">Välj kommun(er)</option>
-    {% for kommun in fvs.kommun.counts|sort_maplist:'label' %}
-  <option value="{{ kommun.value }}">
-  {{ kommun.label }} - ({{ kommun.count }})
-  </option>
-    {% endfor %}
-</select>
+    <select class="form-select" multiple aria-label="multiple select kommun" name="qfacet.kommun[]" >
+      <option value="">Välj kommun(er)</option>
+      {% with m.search.facet_values as result2 %}
+      {% with result2|facet_part as fvs2 %}
+      {% for kommun2 in fvs2.kommun.values|sort_maplist:'label' %}
+      <option value="{{ kommun2.value }}">
+      {% with fvs.kommun.counts|filter:`value`:kommun2.value|first as komm %}
+        {{ kommun2.label }} - ({{ komm.count|if:komm.count:0 }})
+      {% endwith %}
+      </option>
+      {% endfor %}
+      {% endwith %}
+      {% endwith %}
+    </select>
     </div>
   </li>
   <script>
