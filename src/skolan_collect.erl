@@ -18,14 +18,15 @@
          get_all_huvudmen/1, get_all_jurper/1,
          get_all_su/1, update_all_su_from_remote/1, update_su/2,
          update_all_salsa/1, update_salsa/2,
-         check_if_koncern/1, check_if_koncern/2,
+         check_if_koncern/2,
          add_huvudmen/2,
          add_schools_for_all_huvudmen/1,
          add_schools_for_huvudmen/2, add_schools_for_huvudman/2,
-         get_koncern/1, get_stored_item/3,
+         get_all_koncern/1, get_koncern/2, get_stored_item/3,
          stored_school_unit_nos/1, stored_school_unit_nos/2,
          get_all_su_kod/1, get_all_su_kod_from_remote/1,
-         remove_old_zombies/1
+         remove_old_zombies/1, refresh_koncern_titles/1, refresh_koncern_title/2,
+         fetch_company_info/2
         ]).
 
 -include_lib("zotonic_core/include/zotonic.hrl").
@@ -62,7 +63,7 @@ add_huvudman(#{
                   m_rsc:is_cat(CompId, koncern, Context)}
             of
                 {[], false} ->
-                    case check_if_koncern(OrgNo) of
+                    case check_if_koncern(OrgNo, Context) of
                         {ok, CompId} -> % Koncern itself
                             do_nothing;
                         {ok, KoncernId} ->
@@ -70,9 +71,10 @@ add_huvudman(#{
                         _ ->
                             do_nothing
                     end;
-                {_,_} -> %% Either koncern itself or already connected
+                {_, _} -> %% Koncern itself or Already connected
                     do_nothing
             end,
+            m_rsc:update(CompId, #{<<"title">> => {trans,[{sv,Name}]}}, Context),
             {ok, CompId};
         {error,{unknown_rsc,_}} ->
             timer:sleep(500),
@@ -99,49 +101,43 @@ add_huvudman(#{
 
 
 %% Internal functions
-check_if_koncern(OrgNo) ->
-    Context = z_context:new(?SITE),
-    check_if_koncern(OrgNo, Context).
-
 check_if_koncern(OrgNo, Context) ->
-    case get_koncern(OrgNo) of
+    case get_koncern(OrgNo, Context) of
         {ok, {KOrgNo, KName}} ->
             %% Create new koncern mother company.
             create_if_not_exist(KOrgNo, KName, koncern, Context);
         Error -> Error
     end.
 
-%% Fetch koncern mother company (if any) for company id from "allabolag.se"
-%% This involves scraping html... Can change
-%% https://www.allabolag.se/{companyid}/koncern
-get_koncern(OrgNo) when is_binary(OrgNo) ->
-    get_koncern(binary_to_list(OrgNo));
-get_koncern(OrgNo) when is_list(OrgNo)->
+%% Fetch koncern mother company (if any) for company id from "www.bolagsfakta.se"
+%% https://www.bolagsfakta.se/api/foretag/koncern/5569320699
+get_koncern(OrgNo, Context) when is_binary(OrgNo) ->
+    get_koncern(binary_to_list(OrgNo), Context);
+get_koncern(OrgNo, Context) when is_list(OrgNo)->
     Options = [{timeout, 10000}],
-    Url = "https://www.allabolag.se/" ++ OrgNo ++ "/koncern",
-    case z_url_fetch:fetch(Url, Options) of
-        {ok, {_Final, _Hs, _Length, <<>>}} ->
-            {error, empty};
-        {ok, {_Final, _Hs, _Length, Html}} ->
-            case string:find(Html, "Koncernmoderbolaget") of
-                nomatch -> {error, nomatch};
-                A ->
-                    case string:split(string:slice(A, 0, 150), "allabolag.se/") of
-                        [_,OrgNr1] ->
-                            [OrgNr2|_] = string:split(OrgNr1,"/"),
-                            [_,Konc1|_] = string:split(A,">"),
-                            [Konc2|_] = string:split(Konc1,"<"),
-                            {ok, {OrgNr2, Konc2}};
-                        [B1] ->
-                            [_, B2] = string:split(B1, "\n"),
-                            [B3|_] = string:split(B2, "\n"),
-                            B4 = string:trim(B3),
-                            B5 = binary:replace(string:lowercase(B4), <<" ">>,<<"_">>),
-                            {ok,{B5,B4}}
+    Url = "https://www.bolagsfakta.se/api/foretag/koncern/" ++ OrgNo,
+    case z_fetch:fetch_json(Url, Options, Context) of
+        {ok, A} ->
+            case maps:get(<<"foretagLista">>, A, []) of
+                [] -> {error, {OrgNo, no_koncern}};
+                [K|_] ->
+                    case K of
+                      #{<<"foretagNamn">> := KName, <<"orgNr">> := KOrgNo} ->
+                        {ok, {KOrgNo, KName}};
+                      _ -> {error, missing_koncern_pars}
                     end
             end;
         Error -> Error
     end.
+fetch_company_info(OrgNo, Context) ->
+    Options = [{timeout, 10000}],
+    Url = "https://www.bolagsfakta.se/api/search?what=" ++ binary_to_list(OrgNo),
+    case z_fetch:fetch_json(Url, Options, Context) of
+      {ok, #{<<"searchResultItems">> := [C|_]}} ->
+        {ok, C};
+    _ -> {error, {OrgNo, no_company_info}}
+      end.
+
 
 add_schools_for_all_huvudmen(Context) ->
     AllPossibleCompIds = get_all_jurper(Context),
@@ -181,6 +177,51 @@ add_schools_for_huvudman(CompId, Context) when is_integer(CompId)->
             do_nothing
     end,
     ok.
+
+%% ---------------------------------------------------------------
+%% Sometime titles of companies change
+refresh_koncern_titles(Context) ->
+    lists:foreach(fun(I) -> refresh_koncern_title(I, Context) end,
+        get_all_koncern(Context)).
+
+refresh_koncern_title(Id, Context) ->
+    timer:sleep(500),
+    Name = m_rsc:p(Id, name, Context),
+    OrgNo = orgno_from_name(Name),
+    case fetch_company_info(OrgNo, Context) of
+        {ok, #{<<"companyName">> := KName}} ->
+            m_rsc:update(Id, #{<<"title">> => {trans,[{sv, KName}]}},
+            Context);
+        {ok, _} ->
+            ?LOG_ERROR(#{
+                text => <<"Error updating koncern title">>,
+                orgno => OrgNo,
+                reason => no_company_name
+               }),
+            {error, {Name, no_company_name}};
+        Error ->
+            ?LOG_ERROR(#{
+                text => <<"Error updating koncern title">>,
+                orgno => OrgNo,
+                reason => Error
+            }),
+            Error
+    end.
+
+%% ---------------------------------------------------------------
+get_all_koncern(Context) ->
+    get_all_koncern(1, [], Context).
+
+get_all_koncern(Page, Acc, Context) ->
+    case m_search:search(<<"query">>,
+                         #{<<"cat">> => <<"koncern">>,
+                           <<"page">> => Page,
+                           <<"pagelen">> => 300}, Context) of
+        {ok, #search_result{result = Result1, next = false }} ->
+            Acc ++ Result1;
+        {ok, #search_result{result = Result2, next = NextPage}} ->
+            get_all_koncern(NextPage, Acc ++ Result2, Context)
+    end.
 
 %% ---------------------------------------------------------------
 get_all_jurper(Context) ->
@@ -337,9 +378,14 @@ create_if_not_exist(OrgNo, Title, Category, OptionalArgs, Context)->
         {ok, Id} ->
             case proplists:get_value(status, OptionalArgs) of
                 undefined ->
-                    do_nothing;
+                    m_rsc:update(Id,
+                                 #{<<"title">> => {trans,[{sv,Title}]}},
+                                 Context);
                 Status ->
-                    m_rsc:update(Id, #{<<"status">> => Status}, Context)
+                    m_rsc:update(Id,
+                                 #{<<"status">> => Status,
+                                   <<"title">> => {trans,[{sv,Title}]}},
+                                 Context)
             end,
             {ok, Id};
         {error,{unknown_rsc,_}} ->
