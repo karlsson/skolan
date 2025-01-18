@@ -283,9 +283,9 @@ update_su(SchoolUnitCode, Context) when is_binary(SchoolUnitCode)->
                               <<"Namn">> := _Namn} = HuvudMan,
           <<"Status">> := Status,
           <<"Namn">> := Title,
-          <<"Besoksadress">> :=
-              #{<<"GeoData">> := GeoData}
-         } = M,
+          <<"Besoksadress">> := BA
+        } = M,
+        GeoData = maps:get(<<"GeoData">>, BA, undefined),
         {ok, Id} =
             create_if_not_exist(SchoolUnitCode, Title,
                                 skola,[{status, Status}], Context),
