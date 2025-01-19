@@ -58,20 +58,25 @@ add_huvudman(#{
                <<"PeOrgNr">> := OrgNo}, Context) ->
     case get_stored_item(OrgNo, jurper, Context) of
         {ok, CompId} ->
-            %% Fix possible missing connection to koncern
-            case {m_rsc:o(CompId, i_koncern, Context),
-                  m_rsc:is_cat(CompId, koncern, Context)}
-            of
-                {[], false} ->
-                    case check_if_koncern(OrgNo, Context) of
-                        {ok, CompId} -> % Koncern itself
-                            do_nothing;
-                        {ok, KoncernId} ->
+            KId = check_if_koncern(OrgNo, Context),
+            %% Fix possible missing or new connection to koncern
+            case KId of
+                {ok, CompId} -> % Koncern itself
+                    do_nothing;
+                {ok, KoncernId} ->
+                    X = {m_rsc:o(CompId, i_koncern, Context), m_rsc:is_cat(CompId, koncern, Context)},
+                    case X of
+                        {[], false} ->
                             {ok, _EdgeId} = m_edge:insert(CompId, i_koncern, KoncernId, Context);
-                        _ ->
+                        {[KoncernId|_], false} -> %% Already connected
+                            do_nothing;
+                        {[OldKoncernId|_], false} -> %% New koncern connection
+                            m_edge:delete(CompId, i_koncern, OldKoncernId, Context),
+                            {ok, _EdgeId} = m_edge:insert(CompId, i_koncern, KoncernId, Context);
+                        _ -> 
                             do_nothing
                     end;
-                {_, _} -> %% Koncern itself or Already connected
+                _ ->
                     do_nothing
             end,
             m_rsc:update(CompId, #{<<"title">> => {trans,[{sv,Name}]}}, Context),
@@ -114,21 +119,30 @@ check_if_koncern(OrgNo, Context) ->
 get_koncern(OrgNo, Context) when is_binary(OrgNo) ->
     get_koncern(binary_to_list(OrgNo), Context);
 get_koncern(OrgNo, Context) when is_list(OrgNo)->
+    fetch_json(OrgNo, Context).
+
+fetch_json(OrgNo, Context) ->
     Options = [{timeout, 10000}],
     Url = "https://www.bolagsfakta.se/api/foretag/koncern/" ++ OrgNo,
-    case z_fetch:fetch_json(Url, Options, Context) of
-        {ok, A} ->
-            case maps:get(<<"foretagLista">>, A, []) of
-                [] -> {error, {OrgNo, no_koncern}};
-                [K|_] ->
-                    case K of
-                      #{<<"foretagNamn">> := KName, <<"orgNr">> := KOrgNo} ->
-                        {ok, {KOrgNo, KName}};
-                      _ -> {error, missing_koncern_pars}
-                    end
-            end;
-        Error -> Error
-    end.
+    z_depcache:memo(
+      fun() ->
+        case z_fetch:fetch_json(Url, Options, Context) of
+            {ok, A} ->
+                case maps:get(<<"foretagLista">>, A, []) of
+                    [] -> {error, {OrgNo, no_koncern}};
+                    [K|_] ->
+                        case K of
+                          #{<<"foretagNamn">> := KName, <<"orgNr">> := KOrgNo} ->
+                            {ok, {KOrgNo, KName}};
+                          _ -> {error, missing_koncern_pars}
+                        end
+                end;
+            Error -> Error
+        end
+      end,
+      {koncern, OrgNo},
+      10*?MINUTE,
+      Context).
 fetch_company_info(OrgNo, Context) ->
     Options = [{timeout, 10000}],
     Url = "https://www.bolagsfakta.se/api/search?what=" ++ binary_to_list(OrgNo),
