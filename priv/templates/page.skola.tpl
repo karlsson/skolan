@@ -1,5 +1,6 @@
 {% extends "base.tpl" %}
 {% block content %}
+{% with id.skolenhet.data.attributes as skolenhet %}
     <article>
         <h1>{{ id.title }}</h1>
         {% if id.depiction as dep %}
@@ -60,14 +61,17 @@
             {% endfor %}
             </tbody>
             </table>
-            {% with id.skolenhet.Skolformer|gy_programs as progs %}
+            {% with skolenhet.schoolTypeProperties|gy_programs as progs %}
               {% if progs %}
-              Årskurs: {{ progs }}</br>
+              {{ progs |  join:", "}}<br>
               {% for pr in m.skolan_verket.program %}
-                {% if (pr.code | member:progs)  %}
-                  {{ pr.code }}-{{ pr.name }}&nbsp;&nbsp;
+                {% if ((pr.code | replace:["25",""]) | member:progs)  %}
+                  {{ pr.code | replace:["25",""] }} - {{ pr.name }}&nbsp;&nbsp;
                 {% endif %}
               {% endfor %}
+              <div>Notera att för gymnasium är de listade programmen de skolan har godkänt för.
+              Det är nödvändigtvis inte alla som erbjuds, kontrollera vilka program skolan har
+              på dess hemsida.</div>
               {% endif %}
             {% endwith %}
             </p>
@@ -78,12 +82,13 @@
             {% endif %}
             {% endif %}
         </div>
-        {% if id.skolenhet.Webbadress as webb %}
-        <p><a class="btn btn-primary" href="{{ webb }}" target="_blank">Hemsida</a></p>
+        {% if id.website %}
+        <p><a class="btn btn-primary" href="{{ id.website }}" target="_blank">Hemsida</a></p>
         {% endif %}
    {% geomap_static longitude=id.location_lng latitude=id.location_lat %}
-   <p>{{ id.skolenhet.Besoksadress.Ort }}</p>
+   <p>{{ id.address_street_1}}, {{ id.address_postcode}} {{ id.address_city }}</p>
    </article>
+{% endwith %}
 {% endblock %}
 
 
@@ -91,7 +96,7 @@
     <div class="page-relations">
         {% if id.o.huvudman|is_visible as huvudman %}
             <div class="connections">
-                <h3>Huvudman - {{ id.skolenhet.Huvudman.Typ }}</h3>
+                <h3>Huvudman - {{ id.skolenhet.included.attributes.organizerType }}</h3>
                 <div class="list-items">
                     {% for id in huvudman %}
                         {% catinclude "_list_item.tpl" id %}

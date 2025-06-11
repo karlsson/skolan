@@ -10,7 +10,7 @@
 -include_lib("zotonic_core/include/zotonic.hrl").
 
 -define(API_URL, "https://api.skolverket.se/").
--define(SK_ENHET_REG, "skolenhetsregistret/v1").
+-define(SK_ENHET_REG, "skolenhetsregistret/v2").
 -define(PE, "planned-educations/v3").
 
 -spec m_get(Keys, Msg, Context) -> Return when
@@ -39,9 +39,9 @@ m_get([<<"skolenhet">>, <<"huvudman">>, OrgNo], _Msg, Context) ->
 m_get([<<"skolenhet">>, SchoolUnitCode, SearchDate], _Msg, Context) ->
   {ok, {fetch_data(skolenhet, SchoolUnitCode, SearchDate, Context),[]}};
 m_get([<<"diff">>, <<"huvudman">>, Date], _Msg, Context) ->
-  {ok, {fetch_data(diff, huvudman, Date, Context),[]}};
+   {ok, {fetch_data(diff, huvudman, Date, Context),[]}};
 m_get([<<"diff">>, <<"skolenhet">>, Date], _Msg, Context) ->
-  {ok, {fetch_data(diff, skolenhet, Date, Context),[]}};
+   {ok, {fetch_data(diff, skolenhet, Date, Context),[]}};
 
 
 %% m.skolan_verket[jurperid.name]
@@ -54,6 +54,8 @@ m_get([<<"national_values">>, SchoolForm], _Msg, Context)->
   {ok, {fetch_data(national_values, SchoolForm, Context),[]}};
 m_get([<<"salsa">>], _Msg, Context) ->
   {ok, {fetch_data(salsa, Context),[]}};
+m_get([<<"municipality">>], _Msg, Context) ->
+  {ok, {fetch_data(municipality, Context),[]}};
 m_get([<<"program">>], _Msg, Context) ->
   {ok, {fetch_data(program, Context),[]}};
 m_get(_, _Msg, _Context) ->
@@ -85,7 +87,7 @@ fetch_data(Type, Context)->
     Context).
 %% -----------------
 fetch_school_unit_nos(Context) ->
-  [SUNO || #{<<"Skolenhetskod">> := SUNO} <- fetch_data(skolenhet, Context)].
+  [SUNO || #{<<"schoolUnitCode">> := SUNO} <- fetch_data(skolenhet, Context)].
 
 -spec fetch_data(Type, Arg, Context) -> Return when
     Type :: huvudman | skolenhet | skolenheter | national_values | statistics,
@@ -118,7 +120,7 @@ fetch_data(Type, Arg, SearchDate, Context) ->
     fun() ->
         fetch_data1(Type, Arg, SearchDate, Context)
     end,
-    {Type, Arg},
+    {Type, Arg, SearchDate},
     10*?MINUTE,
     Context).
 
@@ -126,16 +128,15 @@ fetch_options() -> [{timeout, 10000}].
 
 %% Get all huvudmen
 fetch_data1(huvudman, Context) ->
-    {ok, A} = z_fetch:fetch_json(?API_URL ++ ?SK_ENHET_REG ++ "/huvudman",
+    {ok, A} = z_fetch:fetch_json(?API_URL ++ ?SK_ENHET_REG ++ "/organizers",
                                  fetch_options(), Context),
-    %% Strip of first since it is a dummy
-    tl(maps:get(<<"Huvudman">>, A));
+    maps:get(<<"attributes">>,(maps:get(<<"data">>, A)));
 
 %% Get all school units
 fetch_data1(skolenhet, Context) ->
-    {ok, A} = z_fetch:fetch_json(?API_URL ++ ?SK_ENHET_REG ++ "/skolenhet",
+    {ok, A} = z_fetch:fetch_json(?API_URL ++ ?SK_ENHET_REG ++ "/school-units",
                                fetch_options(), Context),
-    maps:get(<<"Skolenheter">>, A);
+    maps:get(<<"attributes">>,(maps:get(<<"data">>, A)));
 
 %% Get salsa values for all school units that have them.
 %%   "salsaAverageGradesIn9thGradeActual"
@@ -153,6 +154,13 @@ fetch_data1(salsa, Context) ->
                          fetch_options(), Context),
     maps:get(<<"compulsorySchoolUnitSalsaMetricList">>, A);
 
+fetch_data1(municipality, Context) ->
+     case fetch_hal_json(?API_URL ++ ?PE ++ "/support/municipality-schoolunit",
+                         fetch_options(), Context) of
+         {ok, #{<<"body">> := #{<<"geographicalAreas">> := A}}} -> A;
+         _ -> []
+     end;
+
 fetch_data1(program, Context) ->
      case fetch_hal_json(?API_URL ++ ?PE ++ "/support/programs",
                        fetch_options(), Context) of
@@ -163,28 +171,29 @@ fetch_data1(program, Context) ->
 
 fetch_data1(huvudman, OrgNo, Context) ->
     {ok, A} =
-        z_fetch:fetch_json(?API_URL ++ ?SK_ENHET_REG ++ "/huvudman/" ++
+        z_fetch:fetch_json(?API_URL ++ ?SK_ENHET_REG ++ "/organizers/" ++
                                binary_to_list(OrgNo),
                            fetch_options(), Context),
-    maps:get(<<"Huvudman">>, A);
+    A;
 
 fetch_data1(skolenhet, SchoolUnitCode, Context) ->
     {ok, A} =
-        z_fetch:fetch_json(?API_URL ++ ?SK_ENHET_REG ++ "/skolenhet/" ++
+        z_fetch:fetch_json(?API_URL ++ ?SK_ENHET_REG ++ "/school-units/" ++
                                binary_to_list(SchoolUnitCode),
                            fetch_options(), Context),
-    maps:get(<<"SkolenhetInfo">>, A);
+    A;
 
 %% Get all school units for one huvudman
 fetch_data1(skolenheter, OrgNo, Context) ->
     {ok, A} =
-        z_fetch:fetch_json(?API_URL ++ ?SK_ENHET_REG ++ "/skolenhet/huvudman/" ++
-                               binary_to_list(OrgNo),
-                           fetch_options(), Context),
-    maps:get(<<"Skolenheter">>, A);
+        z_fetch:fetch_json(?API_URL ++ ?SK_ENHET_REG ++
+                              "/school-units?organization_number=" ++
+                              binary_to_list(OrgNo),
+                          fetch_options(), Context),
+    maps:get(<<"attributes">>, maps:get(<<"data">>, A));
 
 fetch_data1(national_values, <<"gy">>, Context) ->
-  fetch_data1(national_values, <<"gy/NA">>, Context);
+  fetch_data1(national_values, <<"gy/NA25">>, Context);
 fetch_data1(national_values, SchoolForm, Context) ->
   Options = [{'x-api-version', "v3"} | fetch_options()],
   case
@@ -231,30 +240,35 @@ fetch_data1(statistics, SchoolUnitCode, Context) ->
 
 fetch_data1(huvudman, OrgNo, SearchDate, Context) ->
     {ok, A} =
-        z_fetch:fetch_json(?API_URL ++ ?SK_ENHET_REG ++ "/huvudman/" ++
-                               binary_to_list(OrgNo) ++ "/" ++ SearchDate,
+        z_fetch:fetch_json(?API_URL ++ ?SK_ENHET_REG ++ "/organizers/" ++
+                               binary_to_list(OrgNo) ++
+                               "?search_date=" ++ SearchDate,
                            fetch_options(), Context),
-    maps:get(<<"Huvudman">>, A);
+    maps:get(<<"data">>, A);
 
 fetch_data1(skolenhet, SchoolUnitCode, SearchDate, Context) ->
     {ok, A} =
-        z_fetch:fetch_json(?API_URL ++ ?SK_ENHET_REG ++ "/skolenhet/" ++
-                               binary_to_list(SchoolUnitCode) ++ "/" ++ SearchDate,
+        z_fetch:fetch_json(?API_URL ++ ?SK_ENHET_REG ++ "/school-units/" ++
+                               binary_to_list(SchoolUnitCode) ++
+                               "?search_date=" ++ SearchDate,
                            fetch_options(), Context),
-    maps:get(<<"SkolenhetInfo">>, A);
+    maps:get(<<"data">>, A);
 
 fetch_data1(diff, huvudman, Date, Context) ->
     {ok, A} =
-        z_fetch:fetch_json(?API_URL ++ ?SK_ENHET_REG ++ "/diff/huvudman/" ++
-                               binary_to_list(Date),
+        z_fetch:fetch_json(?API_URL ++ ?SK_ENHET_REG ++
+                            "/organizers?meta_modified_after=" ++
+                            binary_to_list(Date),
                            fetch_options(), Context),
-    maps:get(<<"PeOrgNr">>, A);
+    maps:get(<<"attributes">>,(maps:get(<<"data">>, A)));
 fetch_data1(diff, skolenhet, Date, Context) ->
+  io:format("~p~n", [Date]),
     {ok, A} =
-        z_fetch:fetch_json(?API_URL ++ ?SK_ENHET_REG ++ "/diff/skolenhet/" ++
-                               binary_to_list(Date),
+        z_fetch:fetch_json(?API_URL ++ ?SK_ENHET_REG ++
+                            "/school-units?meta_modified_after=" ++
+                            binary_to_list(Date),
                            fetch_options(), Context),
-    maps:get(<<"Skolenhetskoder">>, A).
+    maps:get(<<"attributes">>,(maps:get(<<"data">>, A))).
 
 get_statistics(Type, SchoolUnitCode, #{<<"href">> := Url},Context) ->
     {ok, #{<<"body">> := A}} =  fetch_hal_json(Url , fetch_options(), Context),

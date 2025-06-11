@@ -14,20 +14,13 @@
 %%      add school unit
 %%      add edge school_unit (has) huvudman privat|koncern|kommun.
 
--export([get_admin_context/0, add_all_huvudmen/0,
-         get_all_huvudmen/1, get_all_jurper/1,
-         get_all_su/1, update_all_su_from_remote/1, update_su/2,
-         update_all_salsa/1, update_salsa/2,
-         check_if_koncern/2,
-         add_huvudmen/2,
-         add_schools_for_all_huvudmen/1,
-         add_schools_for_huvudmen/2, add_schools_for_huvudman/2,
-         get_all_koncern/1, get_koncern/2, get_stored_item/3,
-         stored_school_unit_nos/1, stored_school_unit_nos/2,
-         get_all_su_kod/1, get_all_su_kod_from_remote/1,
-         remove_old_zombies/1, refresh_koncern_titles/1, refresh_koncern_title/2,
-         fetch_company_info/2
-        ]).
+-export([get_admin_context/0, add_all_huvudmen/0, get_all_huvudmen/1, get_all_jurper/1,
+         get_all_su/1, update_all_su_from_remote/1, update_su/2, update_all_salsa/1,
+         update_salsa/2, check_if_koncern/2, add_huvudmen/2, add_schools_for_all_huvudmen/1,
+         add_schools_for_huvudmen/2, add_schools_for_huvudman/2, get_all_koncern/1, get_koncern/2,
+         get_stored_item/3, stored_school_unit_nos/1, stored_school_unit_nos/2, get_all_su_kod/1,
+         get_all_su_kod_from_remote/1, remove_old_zombies/1, refresh_koncern_titles/1,
+         refresh_koncern_title/2, fetch_company_info/2]).
 
 -include_lib("zotonic_core/include/zotonic.hrl").
 
@@ -42,20 +35,27 @@ add_all_huvudmen() ->
     Context = get_admin_context(),
     AllMenFromSkolverket = get_all_huvudmen(Context),
     add_huvudmen(AllMenFromSkolverket, Context).
+
 get_all_huvudmen(Context) ->
     m_skolan_verket:fetch_data(huvudman, Context).
+
 add_huvudmen(K, Context) ->
     add_huvudmen1(K, Context).
 
-add_huvudmen1([], _Context) -> ok;
-add_huvudmen1([H|T], Context) ->
-    add_huvudman(H, Context),
+add_huvudmen1([], _Context) ->
+    ok;
+add_huvudmen1([H | T], Context) ->
+    case H of
+        #{<<"organizerType">> := Type,
+          <<"organizationNumber">> := PeOrgNo,
+          <<"displayName">> := Namn} ->
+            add_huvudman(Type, Namn, PeOrgNo, Context);
+        _ ->
+            do_nothing
+    end,
     add_huvudmen1(T, Context).
 
-add_huvudman(#{
-               <<"Typ">> := <<"Enskild">>,
-               <<"Namn">> := Name,
-               <<"PeOrgNr">> := OrgNo}, Context) ->
+add_huvudman(<<"ENSKILD">>, Name, OrgNo, Context) ->
     case get_stored_item(OrgNo, jurper, Context) of
         {ok, CompId} ->
             KId = check_if_koncern(OrgNo, Context),
@@ -64,46 +64,48 @@ add_huvudman(#{
                 {ok, CompId} -> % Koncern itself
                     do_nothing;
                 {ok, KoncernId} ->
-                    X = {m_rsc:o(CompId, i_koncern, Context), m_rsc:is_cat(CompId, koncern, Context)},
+                    X = {m_rsc:o(CompId, i_koncern, Context),
+                         m_rsc:is_cat(CompId, koncern, Context)},
                     case X of
                         {[], false} ->
                             {ok, _EdgeId} = m_edge:insert(CompId, i_koncern, KoncernId, Context);
-                        {[KoncernId|_], false} -> %% Already connected
+                        {[KoncernId | _], false} -> %% Already connected
                             do_nothing;
-                        {[OldKoncernId|_], false} -> %% New koncern connection
+                        {[OldKoncernId | _], false} -> %% New koncern connection
                             m_edge:delete(CompId, i_koncern, OldKoncernId, Context),
                             {ok, _EdgeId} = m_edge:insert(CompId, i_koncern, KoncernId, Context);
-                        _ -> 
+                        _ ->
                             do_nothing
                     end;
                 _ ->
                     do_nothing
             end,
-            m_rsc:update(CompId, #{<<"title">> => {trans,[{sv,Name}]}}, Context),
+            m_rsc:update(CompId, #{<<"title">> => {trans, [{sv, Name}]}}, Context),
             {ok, CompId};
-        {error,{unknown_rsc,_}} ->
+        {error, {unknown_rsc, _}} ->
             timer:sleep(500),
             {Category, KoncernId} =
                 case check_if_koncern(OrgNo, Context) of
-                    {ok, KId} -> {privat, KId};
-                    _ -> {privat, undefined}
+                    {ok, KId} ->
+                        {privat, KId};
+                    _ ->
+                        {privat, undefined}
                 end,
             {ok, CompId} = create_if_not_exist(OrgNo, Name, Category, Context),
             case KoncernId of
-                undefined -> do_nothing;
-                CompId -> do_nothing; % The company itself is koncernmoderbolag
+                undefined ->
+                    do_nothing;
+                CompId ->
+                    do_nothing; % The company itself is koncernmoderbolag
                 _ ->
                     {ok, _EdgeId} = m_edge:insert(CompId, i_koncern, KoncernId, Context)
             end,
             %% add_schools_for_huvudman(CompId, Context),
             {ok, CompId}
     end;
-add_huvudman(#{
-               <<"Namn">> := Name,
-               <<"PeOrgNr">> := OrgNo}, Context) ->
+add_huvudman(_Type, Name, OrgNo, Context) ->
     timer:sleep(1000),
     create_if_not_exist(OrgNo, Name, kommun, Context).
-
 
 %% Internal functions
 check_if_koncern(OrgNo, Context) ->
@@ -111,81 +113,90 @@ check_if_koncern(OrgNo, Context) ->
         {ok, {KOrgNo, KName}} ->
             %% Create new koncern mother company.
             create_if_not_exist(KOrgNo, KName, koncern, Context);
-        Error -> Error
+        Error ->
+            Error
     end.
 
 %% Fetch koncern mother company (if any) for company id from "www.bolagsfakta.se"
 %% https://www.bolagsfakta.se/api/foretag/koncern/5569320699
 get_koncern(OrgNo, Context) when is_binary(OrgNo) ->
     get_koncern(binary_to_list(OrgNo), Context);
-get_koncern(OrgNo, Context) when is_list(OrgNo)->
+get_koncern(OrgNo, Context) when is_list(OrgNo) ->
     fetch_json(OrgNo, Context).
 
 fetch_json(OrgNo, Context) ->
     Options = [{timeout, 10000}],
     Url = "https://www.bolagsfakta.se/api/foretag/koncern/" ++ OrgNo,
-    z_depcache:memo(
-      fun() ->
-        case z_fetch:fetch_json(Url, Options, Context) of
-            {ok, A} ->
-                case maps:get(<<"foretagLista">>, A, []) of
-                    [] -> {error, {OrgNo, no_koncern}};
-                    [K|_] ->
-                        case K of
-                          #{<<"foretagNamn">> := KName, <<"orgNr">> := KOrgNo} ->
-                            {ok, {KOrgNo, KName}};
-                          _ -> {error, missing_koncern_pars}
-                        end
-                end;
-            Error -> Error
-        end
-      end,
-      {koncern, OrgNo},
-      10*?MINUTE,
-      Context).
+    z_depcache:memo(fun() ->
+                       case z_fetch:fetch_json(Url, Options, Context) of
+                           {ok, A} ->
+                               case maps:get(<<"foretagLista">>, A, []) of
+                                   [] -> {error, {OrgNo, no_koncern}};
+                                   [K | _] ->
+                                       case K of
+                                           #{<<"foretagNamn">> := KName, <<"orgNr">> := KOrgNo} ->
+                                               {ok, {KOrgNo, KName}};
+                                           _ -> {error, missing_koncern_pars}
+                                       end
+                               end;
+                           Error -> Error
+                       end
+                    end,
+                    {koncern, OrgNo},
+                    10 * ?MINUTE,
+                    Context).
+
 fetch_company_info(OrgNo, Context) ->
     Options = [{timeout, 10000}],
     Url = "https://www.bolagsfakta.se/api/search?what=" ++ binary_to_list(OrgNo),
     case z_fetch:fetch_json(Url, Options, Context) of
-      {ok, #{<<"searchResultItems">> := [C|_]}} ->
-        {ok, C};
-    _ -> {error, {OrgNo, no_company_info}}
-      end.
-
+        {ok, #{<<"searchResultItems">> := [C | _]}} ->
+            {ok, C};
+        _ ->
+            {error, {OrgNo, no_company_info}}
+    end.
 
 add_schools_for_all_huvudmen(Context) ->
     AllPossibleCompIds = get_all_jurper(Context),
     add_schools_for_huvudmen(AllPossibleCompIds, Context).
 
-add_schools_for_huvudmen([], _Context) -> ok;
-add_schools_for_huvudmen([CompId|T], Context) ->
+add_schools_for_huvudmen([], _Context) ->
+    ok;
+add_schools_for_huvudmen([CompId | T], Context) ->
     add_schools_for_huvudman(CompId, Context),
     add_schools_for_huvudmen(T, Context).
 
-
 %% Add school units for one huvudman
--spec add_schools_for_huvudman(CompId::integer(), z:context()) -> ok | {error, term()}.
-add_schools_for_huvudman(CompId, Context) when is_integer(CompId)->
+-spec add_schools_for_huvudman(CompId :: integer(), z:context()) -> ok | {error, term()}.
+add_schools_for_huvudman(CompId, Context) when is_integer(CompId) ->
     Name = m_rsc:p(CompId, name, Context),
     OrgNo = orgno_from_name(Name),
     case z_utils:only_digits(OrgNo) of
         true ->
             case m_skolan_verket:fetch_data(skolenheter, OrgNo, Context) of
-                [] -> do_nothing;
+                [] ->
+                    do_nothing;
                 L when is_list(L) ->
-                    lists:foreach(
-                      fun
-                          (#{<<"Skolenhetskod">> := SchoolUnitCode,
-                             <<"Skolenhetsnamn">> := Title,
-                             <<"Status">> := Status}) ->
-                              {ok, SchoolId} =
-                                  create_if_not_exist(SchoolUnitCode, Title,
-                                                      skola,[{status, Status}], Context),
-                              m_edge:insert(SchoolId, huvudman, CompId, Context); %% {ok, _EdgeId}
-                          (_) -> do_nothing
-                      end, L),
+                    lists:foreach(fun (#{<<"Skolenhetskod">> := SchoolUnitCode,
+                                         <<"Skolenhetsnamn">> := Title,
+                                         <<"Status">> := Status}) ->
+                                          {ok, SchoolId} =
+                                              create_if_not_exist(SchoolUnitCode,
+                                                                  Title,
+                                                                  skola,
+                                                                  [{status, Status}],
+                                                                  Context),
+                                          m_edge:insert(SchoolId,
+                                                        huvudman,
+                                                        CompId,
+                                                        Context); %% {ok, _EdgeId}
+                                      (_) ->
+                                          do_nothing
+                                  end,
+                                  L),
                     timer:sleep(200);
-                _ -> do_nothing
+                _ ->
+                    do_nothing
             end;
         false ->
             do_nothing
@@ -195,8 +206,7 @@ add_schools_for_huvudman(CompId, Context) when is_integer(CompId)->
 %% ---------------------------------------------------------------
 %% Sometime titles of companies change
 refresh_koncern_titles(Context) ->
-    lists:foreach(fun(I) -> refresh_koncern_title(I, Context) end,
-        get_all_koncern(Context)).
+    lists:foreach(fun(I) -> refresh_koncern_title(I, Context) end, get_all_koncern(Context)).
 
 refresh_koncern_title(Id, Context) ->
     timer:sleep(500),
@@ -204,21 +214,16 @@ refresh_koncern_title(Id, Context) ->
     OrgNo = orgno_from_name(Name),
     case fetch_company_info(OrgNo, Context) of
         {ok, #{<<"companyName">> := KName}} ->
-            m_rsc:update(Id, #{<<"title">> => {trans,[{sv, KName}]}},
-            Context);
+            m_rsc:update(Id, #{<<"title">> => {trans, [{sv, KName}]}}, Context);
         {ok, _} ->
-            ?LOG_ERROR(#{
-                text => <<"Error updating koncern title">>,
-                orgno => OrgNo,
-                reason => no_company_name
-               }),
+            ?LOG_ERROR(#{text => <<"Error updating koncern title">>,
+                         orgno => OrgNo,
+                         reason => no_company_name}),
             {error, {Name, no_company_name}};
         Error ->
-            ?LOG_ERROR(#{
-                text => <<"Error updating koncern title">>,
-                orgno => OrgNo,
-                reason => Error
-            }),
+            ?LOG_ERROR(#{text => <<"Error updating koncern title">>,
+                         orgno => OrgNo,
+                         reason => Error}),
             Error
     end.
 
@@ -230,8 +235,10 @@ get_all_koncern(Page, Acc, Context) ->
     case m_search:search(<<"query">>,
                          #{<<"cat">> => <<"koncern">>,
                            <<"page">> => Page,
-                           <<"pagelen">> => 300}, Context) of
-        {ok, #search_result{result = Result1, next = false }} ->
+                           <<"pagelen">> => 300},
+                         Context)
+    of
+        {ok, #search_result{result = Result1, next = false}} ->
             Acc ++ Result1;
         {ok, #search_result{result = Result2, next = NextPage}} ->
             get_all_koncern(NextPage, Acc ++ Result2, Context)
@@ -240,12 +247,15 @@ get_all_koncern(Page, Acc, Context) ->
 %% ---------------------------------------------------------------
 get_all_jurper(Context) ->
     get_all_jurper(1, [], Context).
+
 get_all_jurper(Page, Acc, Context) ->
     case m_search:search(<<"query">>,
                          #{<<"cat">> => <<"jurper">>,
                            <<"page">> => Page,
-                           <<"pagelen">> => 300}, Context) of
-        {ok, #search_result{result = Result1, next = false }} ->
+                           <<"pagelen">> => 300},
+                         Context)
+    of
+        {ok, #search_result{result = Result1, next = false}} ->
             Acc ++ Result1;
         {ok, #search_result{result = Result2, next = NextPage}} ->
             get_all_jurper(NextPage, Acc ++ Result2, Context)
@@ -260,52 +270,59 @@ get_all_su(Page, Acc, Context) ->
     case m_search:search(<<"query">>,
                          #{<<"cat">> => <<"skola">>,
                            <<"page">> => Page,
-                           <<"pagelen">> => 1000}, Context) of
-        {ok, #search_result{result = Result1, next = false }} ->
+                           <<"pagelen">> => 1000},
+                         Context)
+    of
+        {ok, #search_result{result = Result1, next = false}} ->
             Acc ++ Result1;
         {ok, #search_result{result = Result2, next = NextPage}} ->
             get_all_su(NextPage, Acc ++ Result2, Context)
     end.
 
 get_all_su_kod(Context) ->
-    [string:slice(m_rsc:p(A,<<"name">>, Context), 2) || A <- get_all_su(Context)].
+    [string:slice(
+         m_rsc:p(A, <<"name">>, Context), 2)
+     || A <- get_all_su(Context)].
 
 get_all_su_kod_from_remote(Context) ->
-    SUs = m_skolan_verket:fetch_data(skolenhet, Context),
-    [SchoolUnitCode || #{<<"Skolenhetskod">> := SchoolUnitCode} <- SUs].
+    m_skolan_verket:fetch_school_unit_nos(Context).
+
 remove_old_zombies(Context) ->
     Zombies = get_all_su_kod(Context) -- get_all_su_kod_from_remote(Context),
     lists:foreach(fun(SchoolUnitCode) -> update_su(SchoolUnitCode, Context) end, Zombies).
 
 update_all_su_from_remote(Context) ->
-    SUs = m_skolan_verket:fetch_data(skolenhet, Context),
-    lists:foreach(
-      fun(#{<<"Skolenhetskod">> := SchoolUnitCode }) ->
-              update_su(SchoolUnitCode, Context),
-              timer:sleep(200)
-      end, SUs).
+    SUCodes = m_skolan_verket:fetch_school_unit_nos(Context),
+    lists:foreach(fun(SchoolUnitCode) ->
+                     update_su(SchoolUnitCode, Context),
+                     timer:sleep(200)
+                  end,
+                  SUCodes).
 
 update_su(Id, Context) when is_integer(Id) ->
     update_su(m_rsc:p(Id, name, Context), Context);
 update_su(<<"se", SchoolUnitCode/binary>>, Context) ->
     update_su(SchoolUnitCode, Context);
-update_su(SchoolUnitCode, Context) when is_binary(SchoolUnitCode)->
+update_su(SchoolUnitCode, Context) when is_binary(SchoolUnitCode) ->
     try
         M = m_skolan_verket:fetch_data(skolenhet, SchoolUnitCode, Context),
-        #{<<"Huvudman">> := #{<<"Typ">> := _Typ,
-                              <<"PeOrgNr">> := _PeOrgNr,
-                              <<"Namn">> := _Namn} = HuvudMan,
-          <<"Status">> := Status,
-          <<"Namn">> := Title,
-          <<"Besoksadress">> := BA
-        } = M,
-        GeoData = maps:get(<<"GeoData">>, BA, undefined),
-        {ok, Id} =
-            create_if_not_exist(SchoolUnitCode, Title,
-                                skola,[{status, Status}], Context),
+        #{<<"included">> :=
+              #{<<"organizationNumber">> := PeOrgNo,
+                <<"attributes">> := #{<<"organizerType">> := Typ, 
+                <<"displayName">> := HuvudmanNamn}},
+          <<"data">> :=
+              #{<<"attributes">> :=
+                    #{<<"status">> := Status,
+                      <<"displayName">> := Title,
+                      <<"addresses">> := [BA | _]
+                    } = Attr
+                }} = M,
+        GeoData = maps:get(<<"geoCoordinates">>, BA, undefined),
+        {ok, Id} = create_if_not_exist(SchoolUnitCode, Title, skola,
+            [{status, Status}], Context),
         RSC = m_rsc:get(Id, Context),
 
-        {ok, HuvudManId} = add_huvudman(HuvudMan, Context),
+        {ok, HuvudManId} = add_huvudman(Typ, HuvudmanNamn, PeOrgNo, Context),
 
         case m_rsc:o(Id, huvudman, Context) of
             [HuvudManId] ->
@@ -320,53 +337,46 @@ update_su(SchoolUnitCode, Context) when is_binary(SchoolUnitCode)->
 
         Statistics =
             case Status of
-                <<"Aktiv">> ->
-                    m_skolan_verket:fetch_data(statistics,
-                                               SchoolUnitCode,
-                                                Context);
+                <<"AKTIV">> ->
+                    m_skolan_verket:fetch_data(statistics, SchoolUnitCode, Context);
                 _ ->
                     undefined
             end,
         NewRSC = RSC#{<<"statistics">> => Statistics,
-                      <<"skolenhet">> => M},
+                    <<"skolenhet">> => M,
+                    <<"address_city">> => maps:get(<<"locality">>, BA, undefined),
+                    <<"address_street_1">> => maps:get(<<"streetAddress">>, BA, undefined),
+                    <<"address_postcode">> => maps:get(<<"postalCode">>, BA, undefined),
+                    <<"website">> => maps:get(<<"url">>, Attr, undefined)
+                },
 
         NewRSC2 =
             case GeoData of
-                #{<<"Koordinat_WGS84_Lat">> := Lat,
-                  <<"Koordinat_WGS84_Lng">> := Lng
-                 } when Lat =/= undefined, Lng =/= undefined ->
-                    NewRSC#{
-                            <<"location_lat">> =>
-                                skolan_utils:bstring_to_float(Lat),
-                            <<"location_lng">> =>
-                                skolan_utils:bstring_to_float(Lng)};
-                _  ->
+                #{<<"latitude">> := Lat, <<"longitude">> := Lng}
+                    when Lat =/= undefined, Lng =/= undefined ->
+                    NewRSC#{<<"location_lat">> => skolan_utils:bstring_to_float(Lat),
+                            <<"location_lng">> => skolan_utils:bstring_to_float(Lng)};
+                _ ->
                     NewRSC
             end,
         m_rsc:update(Id, NewRSC2, Context)
     catch
-        error:{badmatch, {error, {S, _, _, _, _}}}
-          when S == 410; S == 400; S == 404 ->
-            case m_rsc:name_to_id(
-                          <<"se", SchoolUnitCode/binary>>,
-                          Context) of
+        error:{badmatch, {error, {S, _, _, _, _}}} when S == 410; S == 400; S == 404 ->
+            case m_rsc:name_to_id(<<"se", SchoolUnitCode/binary>>, Context) of
                 {ok, Id2} ->
-                    ?LOG_INFO(#{
-                        text => <<"SchoolUnitCode not found at Skolverket - removing from database">>,
-                        id => Id2,
-                        school_unit_code => SchoolUnitCode,
-                        reason => not_found
-                    }),
+                    ?LOG_INFO(#{text =>
+                                    <<"SchoolUnitCode not found at Skolverket - removing from database">>,
+                                id => Id2,
+                                school_unit_code => SchoolUnitCode,
+                                reason => not_found}),
                     m_rsc:delete(Id2, Context);
-                {error,{unknown_rsc,_}} ->
+                {error, {unknown_rsc, _}} ->
                     do_nothing
             end;
         _:Error ->
-            ?LOG_ERROR(#{
-                        text => <<"Error updating school unit">>,
-                        school_unit_code => SchoolUnitCode,
-                        reason => Error
-                       }),
+            ?LOG_ERROR(#{text => <<"Error updating school unit">>,
+                         school_unit_code => SchoolUnitCode,
+                         reason => Error}),
             Error
     end.
 
@@ -375,72 +385,74 @@ update_all_salsa(Context) ->
     lists:foreach(fun(Salsa) -> update_salsa(Salsa, Context) end, Salsas).
 
 update_salsa(#{<<"schoolUnitCode">> := SUC} = Salsa, Context) ->
-    m_rsc:update(<<"se", SUC/binary>>,
-                 #{<<"salsa">> => Salsa}, Context).
+    m_rsc:update(<<"se", SUC/binary>>, #{<<"salsa">> => Salsa}, Context).
+
 %% ---------------------------------------------------------------
 
--spec create_if_not_exist(binary(), binary(), atom(), z:context())->
-          {ok, integer()} | {error, term()}.
-create_if_not_exist(OrgNo, Title, Category, Context)->
+-spec create_if_not_exist(binary(), binary(), atom(), z:context()) ->
+                             {ok, integer()} | {error, term()}.
+create_if_not_exist(OrgNo, Title, Category, Context) ->
     create_if_not_exist(OrgNo, Title, Category, [], Context).
 
-
--spec create_if_not_exist(binary(), binary(), atom(), proplists:proplist(), z:context())->
-          {ok, integer()} | {error, term()}.
-create_if_not_exist(OrgNo, Title, Category, OptionalArgs, Context)->
+-spec create_if_not_exist(binary(),
+                          binary(),
+                          atom(),
+                          proplists:proplist(),
+                          z:context()) ->
+                             {ok, integer()} | {error, term()}.
+create_if_not_exist(OrgNo, Title, Category, OptionalArgs, Context) ->
     case get_stored_item(OrgNo, Category, Context) of
         {ok, Id} ->
             case proplists:get_value(status, OptionalArgs) of
                 undefined ->
-                    m_rsc:update(Id,
-                                 #{<<"title">> => {trans,[{sv,Title}]}},
-                                 Context);
+                    m_rsc:update(Id, #{<<"title">> => {trans, [{sv, Title}]}}, Context);
                 Status ->
                     m_rsc:update(Id,
-                                 #{<<"status">> => Status,
-                                   <<"title">> => {trans,[{sv,Title}]}},
+                                 #{<<"status">> => Status, <<"title">> => {trans, [{sv, Title}]}},
                                  Context)
             end,
             {ok, Id};
-        {error,{unknown_rsc,_}} ->
+        {error, {unknown_rsc, _}} ->
             CatId = m_rsc:rid(Category, Context),
             Props1 =
-                #{
-                  <<"title">> => {trans,[{sv,Title}]},
+                #{<<"title">> => {trans, [{sv, Title}]},
                   <<"name">> => name_from_orgno(OrgNo, Category),
                   <<"category_id">> => CatId,
                   <<"tz">> => <<"UTC">>,
                   <<"is_published">> => true,
                   %% <<"creator_id">> => AdminId,
-                  <<"language">> => [sv]
-                 },
+                  <<"language">> => [sv]},
             Props =
                 case proplists:get_value(status, OptionalArgs) of
-                    undefined -> Props1;
-                    Status -> Props1#{<<"status">> => Status}
+                    undefined ->
+                        Props1;
+                    Status ->
+                        Props1#{<<"status">> => Status}
                 end,
             m_rsc:insert(Props, Context)
     end.
 
--spec get_stored_item( binary(), atom(), z:context() ) ->
-          {ok, integer()}| {error,{unknown_rsc, binary()}}.
+-spec get_stored_item(binary(), atom(), z:context()) ->
+                         {ok, integer()} | {error, {unknown_rsc, binary()}}.
 get_stored_item(OrgNo, Category, Context) ->
     m_rsc:name_to_id(name_from_orgno(OrgNo, Category), Context).
 
--spec orgno_from_name( binary() ) -> binary().
-orgno_from_name(<< "se", OrgNo/binary >>) ->
+-spec orgno_from_name(binary()) -> binary().
+orgno_from_name(<<"se", OrgNo/binary>>) ->
     OrgNo;
-orgno_from_name(<< "org", OrgNo/binary >>) -> %% jurper, privat, koncern, kommun
+orgno_from_name(<<"org", OrgNo/binary>>) -> %% jurper, privat, koncern, kommun
     OrgNo.
 
--spec name_from_orgno( binary(), atom() ) -> binary().
+-spec name_from_orgno(binary(), atom()) -> binary().
 name_from_orgno(OrgNo, skola) ->
     <<"se", OrgNo/binary>>;
-name_from_orgno(OrgNo, _) -> %% jurper, privat, koncern, kommun
+name_from_orgno(OrgNo,
+                _) -> %% jurper, privat, koncern, kommun
     <<"org", OrgNo/binary>>.
 
 stored_school_unit_nos(Context) ->
     stored_school_unit_nos(get_all_su(Context), Context).
+
 stored_school_unit_nos(SchoolUnitIds, Context) ->
     Names = [m_rsc:p(Id, name, Context) || Id <- SchoolUnitIds],
-    [NO || <<"se", NO/binary >> <- Names ].
+    [NO || <<"se", NO/binary>> <- Names].

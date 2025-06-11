@@ -35,9 +35,8 @@
 {# title, or for persons the rendering of "_name.tpl"               #}
 
 {% block su_status %}{{ id.status }}{% endblock %}
-{% block su_typ %}{{ id.skolenhet.Huvudman.Typ }}{% endblock %}
-{% block label_kommun %}{{ id.skolenhet.Kommun.Namn }}{% endblock %}
-{% block kommun %}{{ id.skolenhet.Kommun.Kommunkod }}{% endblock %}
+{% block su_typ %}{{ id.skolenhet.included.attributes.organizerType }}{% endblock %}
+{% block kommun %}{{ id.skolenhet.data.attributes.municipalityCode }}{% endblock %}
 {% block gy_weighted_float %}{% for stats in id.statistics %}{% if stats.type == "gy" and stats.weightedStudentsPerTeacherQuota %}{{ stats.weightedStudentsPerTeacherQuota|format_float }}{% endif %}{% endfor %}{% endblock %}
 {% block gr_weighted_float %}{% for stats in id.statistics %}{% if stats.type == "gr" and stats.weightedStudentsPerTeacherQuota %}{{ stats.weightedStudentsPerTeacherQuota|format_float }}{% endif %}{% endfor %}{% endblock %}
 {% block is_salsa %}{{ id.salsa|is_defined }}{% endblock %}

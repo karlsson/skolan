@@ -9,38 +9,41 @@
             } as result %}
     {% with result|facet_part as fvs %}
   <li class="divider">Status
-    {# {% print fvs %} #}
-    {% for su_status in fvs.su_status.counts %}
+    {% for su_status in fvs.su_status.counts|sort_maplist:'label' %}
+    {% if su_status.count %}
     <div class="form-check">
          <input class="form-check-input" type="checkbox" name="qfacet.su_status[]"
          value="{{ su_status.value }}" id="su_status_{{ su_status.label }}">
          <label class="form-check-label" for="su_status_{{ su_status.label }}">
-                {{ su_status.label }} - ({{ su_status.count }})
+                {{ su_status.label|lower|capfirst }} - ({{ su_status.count }})
          </label>
     </div>
+    {% endif %}
     {% endfor %}
   </li>
   <li class="divider">Typ av huvudman
-    {% for su_typ in fvs.su_typ.counts %}
+    {% for su_typ in fvs.su_typ.counts|sort_maplist:'label'  %}
+    {% if su_typ.count %}
     <div class="form-check">
          <input class="form-check-input" type="checkbox" name="qfacet.su_typ[]"
          value="{{ su_typ.value }}" id="su_typ_{{ su_typ.label }}">
          <label class="form-check-label" for="su_typ_{{ su_typ.label }}">
-                {{ su_typ.label }} - ({{ su_typ.count }})
+                {{ su_typ.label|lower|capfirst }} - ({{ su_typ.count }})
          </label>
     </div>
+    {% endif %}
     {% endfor %}
   </li>
-  <li class="divider">Kommuner
+  <li class="divider">Kommuner/Regioner
     <div class="form-check">
     <select class="form-select" multiple aria-label="multiple select kommun" name="qfacet.kommun[]" >
       <option value="">Välj kommun(er)</option>
       {% with m.search.facet_values as result2 %}
       {% with result2|facet_part as fvs2 %}
-      {% for kommun2 in fvs2.kommun.values|sort_maplist:'label' %}
-      <option value="{{ kommun2.value }}">
-      {% with fvs.kommun.counts|filter:`value`:kommun2.value|first as komm %}
-        {{ kommun2.label }} - ({{ komm.count|if:komm.count:0 }})
+      {% for kommun2 in m.skolan_verket.municipality|sort_maplist:'name' %}
+      <option value="{{ kommun2.code }}">
+      {% with fvs.kommun.counts|filter:`value`:kommun2.code|first as komm %}
+        {{ kommun2.name }} - ({{ komm.count|if:komm.count:0 }})
       {% endwith %}
       </option>
       {% endfor %}
@@ -75,7 +78,6 @@
   </label>
   <input type="range" class="form-range" min="0" max="50" step="1"
          id="gyrr_weighted" value="40" name="gyrr_weighted" >
-  </input>
   </li>
   <li class="divider">
     <div class="form-check">Enbart de med salsa:

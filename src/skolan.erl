@@ -383,7 +383,7 @@ get_no_of_school_units(Id, Context) ->
   SUs = m_rsc:s(Id, huvudman, Context),
   %% Filter out only active units
   ActiveSchoolUnits =
-    [ SU || SU <- SUs, <<"Aktiv">> == m_rsc:p(SU, <<"status">>, Context)],
+    [ SU || SU <- SUs, <<"AKTIV">> == m_rsc:p(SU, <<"status">>, Context)],
 
   F = fun
     (ASU, {GrAcc, GyAcc}) ->

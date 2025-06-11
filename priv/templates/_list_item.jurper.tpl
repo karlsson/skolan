@@ -7,8 +7,7 @@
                 <em>&ndash; {{ id.category_id.title }}</em>
             {% endif %}
         </a>&nbsp;
-        <span role="button" class="badge bg-primary rounded-pill"
-           onClick="$('#coll_{{id}}').collapse('toggle')"
+        <span role="button" data-toggle="collapse" href="#coll_{{id}}" class="badge bg-primary rounded-pill"
            title="Antal aktiva skolenheter" >
            {{ id.no_of_school_units }}
         </span>
@@ -18,8 +17,7 @@
     {% for id in huvudmen|sort:['desc','no_of_school_units'] %}
     <li class="list-group-item">
         <a href="{{ id.page_url}}"><strong>{{ id.title }}</strong></a>
-           <span role="button" class="badge bg-primary rounded-pill"
-              onClick="$('#coll_{{id}}').collapse('toggle')"
+           <span role="button" class="badge bg-primary rounded-pill" data-toggle="collapse" href="#coll_{{id}}"
               title="Antal aktiva skolenheter" >
               {{ id.no_of_school_units }}
            </span>
