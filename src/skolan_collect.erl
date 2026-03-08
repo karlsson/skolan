@@ -8,13 +8,14 @@
 %%       add edge that huvudman is part of (ingar_i) koncern
 %%
 %%   Get all school units belonging to huvudman
-%%   ( curl 'https://api.skolverket.se/skolenhetsregistret/v1/skolenhet/huvudman/{organisation_no}'
+%%   ( curl 'https://api.skolverket.se/skolenhetsregistret/v2/skolenhet/huvudman/{organisation_no}'
 %%        -H 'accept: application/json')
 %%   If school unit does not exist
 %%      add school unit
 %%      add edge school_unit (has) huvudman privat|koncern|kommun.
 
--export([get_admin_context/0, add_all_huvudmen/0, get_all_huvudmen/1, get_all_jurper/1,
+-export([get_admin_context/0, add_all_huvudmen/0, update_huvudmen_status/1,
+         get_all_huvudmen/1, get_all_jurper/1,
          get_all_su/1, update_all_su_from_remote/1, update_su/2, update_all_salsa/1,
          update_salsa/2, check_if_koncern/2, add_huvudmen/2, add_schools_for_all_huvudmen/1,
          add_schools_for_huvudmen/2, add_schools_for_huvudman/2, get_all_koncern/1, get_koncern/2,
@@ -35,6 +36,18 @@ add_all_huvudmen() ->
     Context = get_admin_context(),
     AllMenFromSkolverket = get_all_huvudmen(Context),
     add_huvudmen(AllMenFromSkolverket, Context).
+
+update_huvudmen_status(Context) ->
+    AllMenFromSkolverket = get_all_huvudmen(Context),
+    Fun = fun(#{<<"organizationNumber">> := PeOrgNo}) ->
+                  case get_stored_item(PeOrgNo, jurper, Context) of
+                      {ok, CompId} ->
+                          m_rsc:update(CompId,
+                                       #{<<"huvudman">> => <<"HUVUDMAN">>} , Context);
+                      _ -> do_nothing
+                  end
+          end,
+    lists:foreach(Fun, AllMenFromSkolverket).
 
 get_all_huvudmen(Context) ->
     m_skolan_verket:fetch_data(huvudman, Context).

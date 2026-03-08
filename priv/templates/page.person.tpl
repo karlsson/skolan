@@ -1,8 +1,13 @@
 {% extends "page.tpl" %}
-
 {% block content_after %}
    {% if m.rsc[id].is_cat.koncern %}
        <p>Företaget är ett Koncernmoderbolag.</p>
+   {% endif %}
+
+   {% if id.s.huvudman|is_visible as huvudman %}
+        {% with m.skolan_verket.huvudman[id.name|replace:['org']] as hm %}
+        <p>{{ hm.data.attributes.companyStatus|replace:['_',' ']|replace:['LANGRE','LÄNGRE'] }}</p>
+        {% endwith %}
    {% endif %}
 
    {% if id.no_of_school_units|is_defined %}

@@ -11,7 +11,7 @@
 
 -define(API_URL, "https://api.skolverket.se/").
 -define(SK_ENHET_REG, "skolenhetsregistret/v2").
--define(PE, "planned-educations/v3").
+-define(PE, "planned-educations/v4").
 
 -spec m_get(Keys, Msg, Context) -> Return when
     Keys :: list(),
@@ -362,7 +362,7 @@ find_in_statistics1(Key, [H|T]) ->
 
 fetch_hal_json(Url, Options, _Context) ->
   Url1 = z_convert:to_binary(Url),
-  Options1 = [ {accept, "application/vnd.skolverket.plannededucations.api.v3.hal+json"} | Options ],
+  Options1 = [ {accept, "application/vnd.skolverket.plannededucations.api.v4.hal+json"} | Options ],
   case z_url_fetch:fetch(Url1, Options1) of
     {ok, {_Final, _Hs, _Length, <<>>}} ->
       {ok, #{}};
